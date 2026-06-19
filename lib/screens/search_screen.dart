@@ -138,12 +138,11 @@ class _SearchScreenState extends State<SearchScreen> {
                     label: Text(topic),
                     labelStyle: const TextStyle(
                       fontSize: 12,
-                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
                     ),
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
+                    backgroundColor: Colors.white,
+                    side: BorderSide.none,
                     onPressed: () {
                       _searchController.text = topic;
                       _search(topic);
