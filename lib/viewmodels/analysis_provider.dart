@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/work.dart';
 import '../models/author.dart';
 import '../models/journal.dart';
+import '../models/keyword.dart';
 import '../models/dashboard_stats.dart';
 import '../services/openalex_service.dart';
 
@@ -35,6 +36,9 @@ class AnalysisProvider extends ChangeNotifier {
   List<TopAuthor> _topAuthors = [];
   List<TopAuthor> get topAuthors => _topAuthors;
 
+  List<Keyword> _topKeywords = [];
+  List<Keyword> get topKeywords => _topKeywords;
+
   DashboardStats? _dashboardStats;
   DashboardStats? get dashboardStats => _dashboardStats;
 
@@ -56,13 +60,14 @@ class AnalysisProvider extends ChangeNotifier {
     _setState(AnalysisState.loading);
 
     try {
-      // Gọi 5 API cùng lúc — Future.wait chờ tất cả hoàn thành
+      // Gọi 6 API cùng lúc — Future.wait chờ tất cả hoàn thành
       final results = await Future.wait([
         _service.getPublicationsByYear(query: trimmed),   // index 0
         _service.getTopCitedWorks(query: trimmed),        // index 1
         _service.getTopJournals(query: trimmed),          // index 2
         _service.getTopAuthors(query: trimmed),           // index 3
         _service.getDashboardOverview(query: trimmed),    // index 4
+        _service.getTopKeywords(query: trimmed),          // index 5
       ]);
 
       // Parse yearly trends (từ group_by)
@@ -97,6 +102,14 @@ class AnalysisProvider extends ChangeNotifier {
           .where((a) => a.displayName.isNotEmpty && a.id.isNotEmpty)
           .toList();
 
+      // Parse top keywords (từ group_by topics.id)
+      final keywordGroups = results[5]['group_by'] as List<dynamic>? ?? [];
+      _topKeywords = keywordGroups
+          .whereType<Map<String, dynamic>>()
+          .map((j) => Keyword.fromGroupByJson(j))
+          .where((k) => k.displayName.isNotEmpty && k.id.isNotEmpty)
+          .toList();
+
       // Tính average citation từ overview
       final meta = results[4]['meta'] as Map<String, dynamic>? ?? {};
       final totalCount = meta['count'] as int? ?? 0;
@@ -117,6 +130,7 @@ class AnalysisProvider extends ChangeNotifier {
         yearlyTrends: _yearlyTrends,
         topJournals: _topJournals,
         topAuthors: _topAuthors,
+        topKeywords: _topKeywords,
         topCitedWorks: _topCitedWorks,
         averageCitationCount: avgCitation,
       );
@@ -136,6 +150,7 @@ class AnalysisProvider extends ChangeNotifier {
     _topCitedWorks = [];
     _topJournals = [];
     _topAuthors = [];
+    _topKeywords = [];
     _dashboardStats = null;
   }
 

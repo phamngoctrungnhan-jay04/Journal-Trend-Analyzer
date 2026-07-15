@@ -162,6 +162,56 @@ class OpenAlexService {
     return _get(uri);
   }
 
+  // Keywords - top từ khoá theo tần suất (dùng group_by topics.id, không
+  // dùng concepts.id vì OpenAlex đã deprecate concepts để chuyển sang topics)
+  Future<Map<String, dynamic>> getTopKeywords({
+    required String query,
+    int perPage = AppConstants.topKeywordsCount,
+  }) async {
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article',
+      'group_by': 'topics.id',
+      'per_page': perPage.toString(),
+    });
+    return _get(uri);
+  }
+
+  // Keyword Detail - trend theo năm, lọc thêm theo 1 keyword cụ thể
+  Future<Map<String, dynamic>> getKeywordYearlyTrend({
+    required String query,
+    required String keywordId,
+  }) async {
+    final id = keywordId.startsWith('https://')
+        ? keywordId.split('/').last
+        : keywordId;
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article,topics.id:$id',
+      'group_by': 'publication_year',
+      'per_page': '200',
+    });
+    return _get(uri);
+  }
+
+  // Keyword Detail - rank tác giả, lọc thêm theo 1 keyword cụ thể
+  Future<Map<String, dynamic>> getKeywordTopAuthors({
+    required String query,
+    required String keywordId,
+    int perPage = AppConstants.keywordAuthorsCount,
+  }) async {
+    final id = keywordId.startsWith('https://')
+        ? keywordId.split('/').last
+        : keywordId;
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article,topics.id:$id',
+      'group_by': 'authorships.author.id',
+      'per_page': perPage.toString(),
+    });
+    return _get(uri);
+  }
+
   // Journal Detail - danh sách bài báo trong 1 journal cụ thể, lọc thêm
   // theo topic đang search (dùng chung filter type:article,
   // primary_location.source.id:{journalId} với search= gốc)
