@@ -70,6 +70,10 @@ class Work {
     if (doi!.startsWith('http')) return doi;
     return 'https://doi.org/$doi';
   }
+
+  // "Link gốc" - trang bài báo tại nhà xuất bản (khác DOI resolver ở nhiều
+  // trường hợp). Fallback sang doiUrl nếu OpenAlex không trả landing_page_url.
+  String? get landingPageUrl => primaryLocation.landingPageUrl ?? doiUrl;
 }
 
 // Dùng cho FR 4.3 - Trend by Year
