@@ -158,10 +158,17 @@ class _TrendChartTab extends StatelessWidget {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: (trends.length / 6).ceilToDouble(),
+                          interval: 1,
                           getTitlesWidget: (value, meta) {
                             final idx = value.toInt();
                             if (idx < 0 || idx >= trends.length) {
+                              return const SizedBox.shrink();
+                            }
+                            // Chỉ hiển thị tối đa ~7 nhãn để tránh chồng chữ;
+                            // luôn hiển thị nhãn năm cuối cùng.
+                            final step = (trends.length / 7).ceil();
+                            final isLast = idx == trends.length - 1;
+                            if (idx % step != 0 && !isLast) {
                               return const SizedBox.shrink();
                             }
                             return Padding(
