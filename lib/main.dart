@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
+import 'firebase_options.dart';
 import 'viewmodels/search_provider.dart';
 import 'viewmodels/analysis_provider.dart';
+import 'viewmodels/auth_viewmodel.dart';
 import 'screens/search_screen.dart';
+import 'screens/login_screen.dart';
 import 'utils/constants.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const JournalTrendApp());
 }
 
@@ -17,6 +25,7 @@ class JournalTrendApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => AnalysisProvider()),
       ],
@@ -24,7 +33,7 @@ class JournalTrendApp extends StatelessWidget {
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: _buildTheme(),
-        home: const SearchScreen(),
+        home: const _AuthGate(),
       ),
     );
   }
@@ -95,6 +104,30 @@ class JournalTrendApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
         ),
       ),
+    );
+  }
+}
+
+// Chuyển giữa LoginScreen và SearchScreen dựa trên AuthState. Bắt đầu ở
+// loading để chờ Firebase Auth khôi phục phiên đăng nhập cũ (nếu có).
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthViewModel>(
+      builder: (context, auth, _) {
+        switch (auth.state) {
+          case AuthState.loading:
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          case AuthState.authenticated:
+            return const SearchScreen();
+          case AuthState.unauthenticated:
+            return const LoginScreen();
+        }
+      },
     );
   }
 }

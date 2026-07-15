@@ -1,7 +1,6 @@
-// Skeleton cho Stage 0 — entity mới của Lab 03, chưa có ở Lab 02 (app cũ
-// không có đăng nhập).
-//
-// TODO (Stage 1): map từ firebase_auth User sau khi tích hợp auth_service.dart.
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+
+// Entity mới của Lab 03, chưa có ở Lab 02 (app cũ không có đăng nhập).
 class UserProfile {
   final String uid;
   final String? displayName;
@@ -14,4 +13,13 @@ class UserProfile {
     this.email,
     this.photoUrl,
   });
+
+  factory UserProfile.fromFirebaseUser(fb_auth.User user) {
+    return UserProfile(
+      uid: user.uid,
+      displayName: user.displayName,
+      email: user.email,
+      photoUrl: user.photoURL,
+    );
+  }
 }

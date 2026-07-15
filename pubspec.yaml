@@ -41,6 +41,9 @@ dependencies:
 
   # Vẽ biểu đồ (bar chart, line chart, pie chart)
   fl_chart: ^0.70.2
+  firebase_core: ^4.12.1
+  firebase_auth: ^6.5.6
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

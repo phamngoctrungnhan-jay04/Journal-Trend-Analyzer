@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../viewmodels/search_provider.dart';
 import '../viewmodels/analysis_provider.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../utils/constants.dart';
 import '../widgets/publication_card.dart';
 import '../widgets/loading_widget.dart';
@@ -78,6 +79,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               );
             },
+          ),
+          // TODO (Stage 2): chuyển nút này vào Profile screen.
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Đăng xuất',
+            onPressed: () => context.read<AuthViewModel>().signOut(),
           ),
         ],
       ),
