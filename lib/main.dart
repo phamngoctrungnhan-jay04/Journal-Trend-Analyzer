@@ -6,7 +6,7 @@ import 'firebase_options.dart';
 import 'viewmodels/search_provider.dart';
 import 'viewmodels/analysis_provider.dart';
 import 'viewmodels/auth_viewmodel.dart';
-import 'screens/search_screen.dart';
+import 'screens/main_shell.dart';
 import 'screens/login_screen.dart';
 import 'utils/constants.dart';
 
@@ -108,8 +108,8 @@ class JournalTrendApp extends StatelessWidget {
   }
 }
 
-// Chuyển giữa LoginScreen và SearchScreen dựa trên AuthState. Bắt đầu ở
-// loading để chờ Firebase Auth khôi phục phiên đăng nhập cũ (nếu có).
+// Chuyển giữa LoginScreen và MainShell (bottom nav) dựa trên AuthState.
+// Bắt đầu ở loading để chờ Firebase Auth khôi phục phiên đăng nhập cũ (nếu có).
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
@@ -123,7 +123,7 @@ class _AuthGate extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           case AuthState.authenticated:
-            return const SearchScreen();
+            return const MainShell();
           case AuthState.unauthenticated:
             return const LoginScreen();
         }

@@ -3,22 +3,23 @@ import 'package:provider/provider.dart';
 
 import '../viewmodels/search_provider.dart';
 import '../viewmodels/analysis_provider.dart';
-import '../viewmodels/auth_viewmodel.dart';
 import '../utils/constants.dart';
+import '../utils/text_utils.dart';
 import '../widgets/publication_card.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/error_widget.dart';
+import '../widgets/stat_card.dart';
+import '../widgets/yearly_trend_chart.dart';
 import 'publication_detail_screen.dart';
-import 'trend_analysis_screen.dart';
 
-class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -47,16 +48,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.trim().isEmpty) return;
     FocusScope.of(context).unfocus();
     context.read<SearchProvider>().search(query);
-  }
-
-  void _navigateToAnalysis(String topic) {
-    context.read<AnalysisProvider>().analyze(topic);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TrendAnalysisScreen(topic: topic),
-      ),
-    );
+    context.read<AnalysisProvider>().analyze(query);
   }
 
   @override
@@ -64,29 +56,6 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
-        actions: [
-          Consumer<SearchProvider>(
-            builder: (context, provider, _) {
-              if (!provider.isSuccess || provider.currentQuery.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return TextButton.icon(
-                onPressed: () => _navigateToAnalysis(provider.currentQuery),
-                icon: const Icon(Icons.bar_chart_rounded, color: Colors.white),
-                label: const Text(
-                  'Phân tích',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            },
-          ),
-          // TODO (Stage 2): chuyển nút này vào Profile screen.
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Đăng xuất',
-            onPressed: () => context.read<AuthViewModel>().signOut(),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -220,6 +189,9 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  // itemCount = 1 header (overview: stat cards + trend chart) + danh sách
+  // publication (đã sort theo cited_by_count:desc từ OpenAlexService, nên
+  // đóng luôn vai trò "Top Papers" cũ) + 1 loading footer nếu còn trang sau.
   Widget _buildResultsList(SearchProvider provider) {
     return Column(
       children: [
@@ -227,17 +199,23 @@ class _SearchScreenState extends State<SearchScreen> {
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            itemCount: provider.works.length + (provider.hasMore ? 1 : 0),
+            itemCount:
+                1 + provider.works.length + (provider.hasMore ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == provider.works.length) {
+              if (index == 0) {
+                return _buildOverviewSection();
+              }
+              final workIndex = index - 1;
+              if (workIndex == provider.works.length) {
                 return const Padding(
                   padding: EdgeInsets.all(16),
                   child: Center(child: CircularProgressIndicator()),
                 );
               }
-              final work = provider.works[index];
+              final work = provider.works[workIndex];
               return PublicationCard(
                 work: work,
+                rank: workIndex + 1,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -252,28 +230,89 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  Widget _buildOverviewSection() {
+    return Consumer<AnalysisProvider>(
+      builder: (context, analysis, _) {
+        if (analysis.isLoading) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: LinearProgressIndicator(),
+          );
+        }
+        final stats = analysis.dashboardStats;
+        if (!analysis.isSuccess || stats == null) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      icon: Icons.article_rounded,
+                      title: 'Tổng bài báo',
+                      value: TextUtils.formatCount(stats.totalPublications),
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StatCard(
+                      icon: Icons.format_quote_rounded,
+                      title: 'TB trích dẫn',
+                      value: stats.formattedAvgCitation,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      icon: Icons.trending_up_rounded,
+                      title: 'Năm sôi động nhất',
+                      value: stats.mostActiveYear?.toString() ?? 'N/A',
+                      subtitle: stats.mostActiveYearCount != null
+                          ? '${TextUtils.formatCount(stats.mostActiveYearCount!)} bài'
+                          : null,
+                      color: const Color(0xFF43A047),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StatCard(
+                      icon: Icons.library_books_rounded,
+                      title: 'Số journals',
+                      value: analysis.topJournals.length.toString(),
+                      subtitle: 'trong kết quả',
+                      color: const Color(0xFFFB8C00),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              YearlyTrendChart(trends: analysis.yearlyTrends),
+              const SizedBox(height: 8),
+              const Divider(height: 32),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildResultsHeader(SearchProvider provider) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: AppColors.surface,
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Tìm thấy ${_formatCount(provider.totalResults)} bài báo cho "${provider.currentQuery}"',
-              style: AppTextStyles.bodySecondary,
-            ),
-          ),
-          TextButton.icon(
-            onPressed: () => _navigateToAnalysis(provider.currentQuery),
-            icon: const Icon(Icons.insights_rounded, size: 16),
-            label: const Text('Xem phân tích'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-          ),
-        ],
+      child: Text(
+        'Tìm thấy ${_formatCount(provider.totalResults)} bài báo cho "${provider.currentQuery}"',
+        style: AppTextStyles.bodySecondary,
       ),
     );
   }
