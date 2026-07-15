@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/search_provider.dart';
-import '../providers/analysis_provider.dart';
+import '../viewmodels/search_provider.dart';
+import '../viewmodels/analysis_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/publication_card.dart';
 import '../widgets/loading_widget.dart';

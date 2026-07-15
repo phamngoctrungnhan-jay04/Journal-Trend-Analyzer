@@ -1,5 +1,14 @@
 # 00 — Tổng quan kiến trúc
 
+> **Ghi chú:** Tài liệu này mô tả kiến trúc **Lab 02**, chốt tại thời điểm
+> trước khi tái cấu trúc cho Lab 03 (commit `f6acc61`, merge vào `main` tại
+> `fa7c3e4`). Từ nhánh `lab03-dev` trở đi, `lib/providers/` đã đổi tên thành
+> `lib/viewmodels/`, có thêm `lib/firebase/`, `lib/models/keyword.dart`,
+> `lib/models/user_profile.dart`, `lib/models/model_aliases.dart`
+> (`Publication = Work`, `Journal = TopJournal`). Toàn bộ mô tả luồng
+> nghiệp vụ (FLOW 1–4) bên dưới và trong các file `01`–`04` vẫn đúng về mặt
+> hành vi — chỉ đường dẫn `providers/` cần đọc là `viewmodels/`.
+
 ## Ứng dụng là gì
 
 **Journal Trend Analyzer** là ứng dụng **di động (mobile)** viết bằng **Flutter/Dart**, thực hiện đồ án môn *PRM393 – Mobile Programming, Lab 2* (theo mô tả trong `pubspec.yaml` và `README.md`). App cho phép người dùng nhập một chủ đề nghiên cứu (ví dụ "Machine Learning") và xem:
@@ -71,7 +80,29 @@ lib/
     └── text_utils.dart                    # decodeAbstract, truncate, formatCount, cleanX
 ```
 
-> **Lưu ý lệch giữa README và code thật:** `README.md` mô tả có `widgets/trend_chart.dart` và `widgets/journal_chart.dart` riêng biệt, nhưng thực tế **các file này không tồn tại**. Toàn bộ logic vẽ 2 biểu đồ (`BarChart` của `fl_chart`) được viết **inline trực tiếp** trong `lib/screens/trend_analysis_screen.dart`, ở 2 private widget `_TrendChartTab` và `_TopJournalsTab`.
+> **Lưu ý lệch giữa README và code thật (tại thời điểm Lab 02):** `README.md` khi đó mô tả có `widgets/trend_chart.dart` và `widgets/journal_chart.dart` riêng biệt, nhưng thực tế **các file này không tồn tại**. Toàn bộ logic vẽ 2 biểu đồ (`BarChart` của `fl_chart`) được viết **inline trực tiếp** trong `lib/screens/trend_analysis_screen.dart`, ở 2 private widget `_TrendChartTab` và `_TopJournalsTab`. Điều này **vẫn đúng** ở nhánh `lab03-dev` — 2 file chart riêng chưa được tách ra.
+
+### Cấu trúc hiện tại trên nhánh `lab03-dev` (sau Stage 0)
+
+```
+lib/
+├── main.dart
+├── models/
+│   ├── work.dart, author.dart, journal.dart, dashboard_stats.dart   # giữ nguyên như Lab 02
+│   ├── model_aliases.dart                 # typedef Publication = Work; typedef Journal = TopJournal;
+│   ├── keyword.dart                       # [MỚI] skeleton, hoàn thiện ở Stage 2
+│   └── user_profile.dart                  # [MỚI] skeleton, hoàn thiện ở Stage 1
+├── services/
+│   └── openalex_service.dart              # không đổi
+├── firebase/
+│   └── README.md                          # [MỚI] placeholder, chưa có service thật
+├── viewmodels/                            # đổi tên từ providers/, nội dung KHÔNG đổi
+│   ├── search_provider.dart
+│   └── analysis_provider.dart
+├── screens/                                # không đổi ở Stage 0 (sẽ tách 4 tab ở Stage 2)
+├── widgets/                                # không đổi
+└── utils/                                  # không đổi
+```
 
 ## Component/Service dùng chung (Shared)
 

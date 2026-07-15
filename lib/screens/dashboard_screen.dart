@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/analysis_provider.dart';
+import '../viewmodels/analysis_provider.dart';
 import '../utils/constants.dart';
 import '../utils/text_utils.dart';
 import '../widgets/stat_card.dart';

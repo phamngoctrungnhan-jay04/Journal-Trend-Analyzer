@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'providers/search_provider.dart';
-import 'providers/analysis_provider.dart';
+import 'viewmodels/search_provider.dart';
+import 'viewmodels/analysis_provider.dart';
 import 'screens/search_screen.dart';
 import 'utils/constants.dart';
 

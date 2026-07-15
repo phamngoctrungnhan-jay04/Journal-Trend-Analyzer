@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-import '../providers/analysis_provider.dart';
+import '../viewmodels/analysis_provider.dart';
 import '../models/journal.dart';
 import '../utils/constants.dart';
 import '../utils/text_utils.dart';
