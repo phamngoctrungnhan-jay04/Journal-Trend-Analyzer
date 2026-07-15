@@ -162,6 +162,35 @@ class OpenAlexService {
     return _get(uri);
   }
 
+  // Journal Detail - danh sách bài báo trong 1 journal cụ thể, lọc thêm
+  // theo topic đang search (dùng chung filter type:article,
+  // primary_location.source.id:{journalId} với search= gốc)
+  Future<Map<String, dynamic>> getWorksByJournal({
+    required String query,
+    required String journalId,
+    int perPage = AppConstants.journalWorksPerPage,
+  }) async {
+    final id = journalId.startsWith('https://')
+        ? journalId.split('/').last
+        : journalId;
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article,primary_location.source.id:$id',
+      'sort': 'cited_by_count:desc',
+      'per_page': perPage.toString(),
+      'select': [
+        'id',
+        'title',
+        'publication_year',
+        'cited_by_count',
+        'authorships',
+        'primary_location',
+        'doi',
+      ].join(','),
+    });
+    return _get(uri);
+  }
+
   // FR 4.7 Dashboard - lấy tổng quan (tổng số bài, average citation)
   // Dùng per_page=1 để chỉ lấy metadata, không tải toàn bộ dữ liệu
   Future<Map<String, dynamic>> getDashboardOverview({

@@ -6,6 +6,7 @@ import '../models/journal.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/error_widget.dart';
 import '../widgets/ranked_bar_list.dart';
+import 'journal_detail_screen.dart';
 
 class JournalsScreen extends StatelessWidget {
   const JournalsScreen({super.key});
@@ -36,6 +37,15 @@ class JournalsScreen extends StatelessWidget {
               items: provider.topJournals,
               nameOf: (j) => j.displayName,
               countOf: (j) => j.worksCount,
+              onTap: (j) => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => JournalDetailScreen(
+                    journal: j,
+                    topic: provider.currentTopic,
+                  ),
+                ),
+              ),
               icon: Icons.library_books_rounded,
               title: 'Top tạp chí nghiên cứu',
               subtitle: 'Xếp hạng theo số bài báo · ${provider.currentTopic}',

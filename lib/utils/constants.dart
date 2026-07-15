@@ -16,6 +16,11 @@ class AppConstants {
   static const int topJournalsCount = 10;
   static const int topAuthorsCount = 10;
   static const int topPapersCount = 10;
+  static const int topKeywordsCount = 10;
+
+  // Detail screens
+  static const int journalWorksPerPage = 20;
+  static const int keywordAuthorsCount = 10;
 
   // App info
   static const String appName = 'Journal Trend Analyzer';
