@@ -22,6 +22,59 @@ flutter --version
 flutter doctor
 ```
 
+### ⚠️ Máy mới clone về: BẮT BUỘC đăng ký SHA-1
+
+**Triệu chứng nếu bỏ qua:** app **vẫn build và chạy bình thường**, nhưng bấm
+"Đăng nhập với Google" thì **luôn thất bại** (`ApiException: 10` /
+`DEVELOPER_ERROR`) → kẹt ở màn Login, không vào được app.
+
+**Nguyên nhân:** Google Sign-In trên Android xác thực bằng **SHA-1 của
+debug.keystore**. Mỗi máy dev có `debug.keystore` **riêng, SHA-1 khác nhau** (do
+Android Studio tự sinh khi cài). Firebase chỉ cấp idToken cho SHA-1 **đã đăng ký**.
+
+> Chỉ **Google Sign-In** cần SHA-1. Các dịch vụ khác (FCM, Analytics, Crashlytics,
+> Remote Config, Storage) **không cần** — chúng chạy được ngay trên máy mới.
+
+**Cách xử lý (mỗi thành viên làm 1 lần):**
+
+1. **Lấy SHA-1 của máy mình:**
+   ```bash
+   cd android
+   ./gradlew signingReport
+   ```
+   Lấy dòng `SHA1:` ở variant **debug** (`Config: debug`).
+
+2. **Đăng ký vào Firebase** (người sở hữu project làm):
+   Firebase Console → ⚙️ **Project settings** → mục **Your apps** → app Android
+   `com.prm393.journal_trend_analyzer` → **Add fingerprint** → dán SHA-1 → **Save**.
+
+   Link nhanh: `https://console.firebase.google.com/project/prm393-lab3-se1834-27919/settings/general`
+
+   > Firebase cho phép **nhiều SHA-1 cùng lúc** — thêm fingerprint mới **không làm
+   > mất** của người khác. Cả nhóm mỗi người thêm một cái.
+
+3. **Tải lại `google-services.json`** ở cùng trang đó → thay file
+   `android/app/google-services.json` → commit. File mới sẽ có thêm một
+   `oauth_client` với `client_type: 1` ứng với SHA-1 vừa thêm.
+
+4. **Máy mới chạy lại:**
+   ```bash
+   git pull
+   flutter clean
+   flutter pub get
+   flutter run
+   ```
+
+> Google cần **vài phút** để propagate fingerprint mới. Nếu vẫn lỗi `ApiException:
+> 10` ngay sau khi thêm, đợi ~5 phút rồi thử lại.
+
+**Kiểm tra nhanh cấu hình có đúng không:**
+- SHA-1 máy bạn phải xuất hiện trong `android/app/google-services.json` ở trường
+  `certificate_hash` (dạng thường, không dấu hai chấm).
+- `client_id` của `client_type: 3` (Web client) trong file đó phải **khớp** hằng số
+  `_webClientId` trong [lib/firebase/auth_service.dart](../lib/firebase/auth_service.dart)
+  — nếu Firebase đổi web client thì phải sửa hằng số này trong code.
+
 ---
 
 ## 2. Cài đặt & chạy app

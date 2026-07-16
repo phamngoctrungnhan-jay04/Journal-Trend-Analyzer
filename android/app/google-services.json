@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "32439771113-lg72q2vkcpp9c2ds2quq6ack5o7khlj5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.prm393.journal_trend_analyzer",
+            "certificate_hash": "996d3fbdc6897e0b1276dc3987e9a88bff65f43f"
+          }
+        },
+        {
           "client_id": "32439771113-p9khe3n84pa907982ds85301ndc35n45.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
