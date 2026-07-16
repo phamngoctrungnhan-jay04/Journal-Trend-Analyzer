@@ -7,6 +7,7 @@ import '../viewmodels/analysis_provider.dart';
 import '../viewmodels/export_viewmodel.dart';
 import '../viewmodels/notification_viewmodel.dart';
 import '../models/app_notification.dart';
+import '../firebase/crash_service.dart';
 import '../utils/constants.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _exportViewModel = ExportViewModel();
+  final _crashService = CrashService();
 
   @override
   void dispose() {
@@ -43,6 +45,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
       topAuthors: analysis.topAuthors,
       topKeywords: analysis.topKeywords,
     );
+  }
+
+  Future<void> _triggerHandledException() async {
+    try {
+      throw Exception('Lỗi thử nghiệm (handled exception)');
+    } catch (e, st) {
+      await _crashService.recordHandledException(e, st);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã ghi nhận lỗi lên Crashlytics')),
+      );
+    }
+  }
+
+  Future<void> _triggerTestCrash() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Test crash Crashlytics'),
+        content: const Text(
+          'Ứng dụng sẽ crash và đóng ngay lập tức để test Crashlytics. Tiếp tục?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Crash ngay'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      _crashService.triggerTestCrash();
+    }
   }
 
   void _copyText(String text, String confirmMessage) {
@@ -99,6 +138,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildExportCard(),
               const SizedBox(height: 12),
               _buildNotificationCard(),
+              const SizedBox(height: 12),
+              _buildDebugCard(),
               const SizedBox(height: 12),
               Card(
                 child: ListTile(
@@ -261,6 +302,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(notification.body, style: AppTextStyles.bodySecondary),
           Text(_formatTime(notification.receivedAt), style: AppTextStyles.caption),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDebugCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.bug_report_rounded, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text('Công cụ debug (Crashlytics)', style: AppTextStyles.heading3),
+              ],
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _triggerHandledException,
+              child: const Text('Trigger handled exception'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _triggerTestCrash,
+              style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
+              child: const Text('Trigger test crash'),
+            ),
+          ],
+        ),
       ),
     );
   }

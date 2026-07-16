@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'firebase/crash_service.dart';
 import 'viewmodels/search_provider.dart';
 import 'viewmodels/analysis_provider.dart';
 import 'viewmodels/auth_viewmodel.dart';
@@ -17,6 +18,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  CrashService().setupErrorHandlers();
   runApp(const JournalTrendApp());
 }
 

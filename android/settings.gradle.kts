@@ -23,6 +23,10 @@ plugins {
     // START: FlutterFire Configuration
     id("com.google.gms.google-services") version("4.3.15") apply false
     // END: FlutterFire Configuration
+    // Bắt buộc cho firebase_crashlytics - package Dart không tự apply plugin
+    // này, cần khai báo thủ công (đã verify qua doc chính thức + source
+    // build.gradle của package trên GitHub, không suy đoán).
+    id("com.google.firebase.crashlytics") version "3.0.7" apply false
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
