@@ -37,15 +37,18 @@ class JournalsScreen extends StatelessWidget {
               items: provider.topJournals,
               nameOf: (j) => j.displayName,
               countOf: (j) => j.worksCount,
-              onTap: (j) => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => JournalDetailScreen(
-                    journal: j,
-                    topic: provider.currentTopic,
+              onTap: (j) {
+                provider.logViewJournal(j);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => JournalDetailScreen(
+                      journal: j,
+                      topic: provider.currentTopic,
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
               icon: Icons.library_books_rounded,
               title: 'Top tạp chí nghiên cứu',
               subtitle: 'Xếp hạng theo số bài báo · ${provider.currentTopic}',

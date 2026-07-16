@@ -216,12 +216,15 @@ class _HomeScreenState extends State<HomeScreen> {
               return PublicationCard(
                 work: work,
                 rank: workIndex + 1,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PublicationDetailScreen(work: work),
-                  ),
-                ),
+                onTap: () {
+                  provider.logViewPublication(work);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PublicationDetailScreen(work: work),
+                    ),
+                  );
+                },
               );
             },
           ),

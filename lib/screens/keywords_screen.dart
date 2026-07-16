@@ -37,15 +37,18 @@ class KeywordsScreen extends StatelessWidget {
               items: provider.topKeywords,
               nameOf: (k) => k.displayName,
               countOf: (k) => k.worksCount,
-              onTap: (k) => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => KeywordDetailScreen(
-                    keyword: k,
-                    topic: provider.currentTopic,
+              onTap: (k) {
+                provider.logViewKeyword(k);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => KeywordDetailScreen(
+                      keyword: k,
+                      topic: provider.currentTopic,
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
               icon: Icons.label_rounded,
               title: 'Top từ khoá nghiên cứu',
               subtitle: 'Xếp hạng theo tần suất xuất hiện · ${provider.currentTopic}',

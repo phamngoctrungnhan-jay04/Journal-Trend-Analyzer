@@ -45,6 +45,9 @@ dependencies:
   firebase_auth: ^6.5.6
   google_sign_in: ^7.2.0
   url_launcher: ^6.3.2
+  firebase_analytics: ^12.4.5
+  firebase_storage: ^13.4.5
+  pdf: ^3.13.0
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +70,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    # Font Unicode (hỗ trợ dấu tiếng Việt) nhúng vào PDF report - package
+    # `pdf` không hỗ trợ tiếng Việt bằng font Base14 mặc định.
+    - assets/fonts/NotoSans-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,15 +1,19 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/work.dart';
 import '../services/openalex_service.dart';
+import '../firebase/analytics_service.dart';
 import '../utils/constants.dart';
 
 enum SearchState { initial, loading, success, error }
 
 class SearchProvider extends ChangeNotifier {
   final OpenAlexService _service;
+  final AnalyticsService _analytics;
 
-  SearchProvider({OpenAlexService? service})
-      : _service = service ?? OpenAlexService();
+  SearchProvider({OpenAlexService? service, AnalyticsService? analytics})
+      : _service = service ?? OpenAlexService(),
+        _analytics = analytics ?? AnalyticsService();
 
   // Trạng thái hiện tại
   SearchState _state = SearchState.initial;
@@ -54,8 +58,16 @@ class SearchProvider extends ChangeNotifier {
     _hasMore = true;
     _errorMessage = null;
     _setState(SearchState.loading);
+    unawaited(_analytics.logSearchTopic(trimmed));
 
     await _fetchWorks();
+  }
+
+  void logViewPublication(Work work) {
+    unawaited(_analytics.logViewPublication(
+      title: work.title,
+      year: work.publicationYear,
+    ));
   }
 
   // Load thêm trang tiếp theo (infinite scroll)

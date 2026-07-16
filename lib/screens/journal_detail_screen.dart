@@ -56,12 +56,15 @@ class JournalDetailScreen extends StatelessWidget {
                 return PublicationCard(
                   work: work,
                   rank: index,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PublicationDetailScreen(work: work),
-                    ),
-                  ),
+                  onTap: () {
+                    vm.logViewPublication(work);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PublicationDetailScreen(work: work),
+                      ),
+                    );
+                  },
                 );
               },
             );

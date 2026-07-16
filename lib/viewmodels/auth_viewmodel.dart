@@ -3,16 +3,19 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
 import '../firebase/auth_service.dart';
+import '../firebase/analytics_service.dart';
 import '../models/user_profile.dart';
 
 enum AuthState { loading, authenticated, unauthenticated }
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService;
+  final AnalyticsService _analytics;
   late final StreamSubscription<fb_auth.User?> _authSubscription;
 
-  AuthViewModel({AuthService? authService})
-      : _authService = authService ?? AuthService() {
+  AuthViewModel({AuthService? authService, AnalyticsService? analytics})
+      : _authService = authService ?? AuthService(),
+        _analytics = analytics ?? AnalyticsService() {
     _authSubscription =
         _authService.authStateChanges.listen(_onAuthStateChanged);
   }
@@ -46,9 +49,12 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authService.signInWithGoogle();
+      final user = await _authService.signInWithGoogle();
       // Nếu thành công, _onAuthStateChanged sẽ tự cập nhật _state khi
       // FirebaseAuth phát sự kiện - không cần set thủ công ở đây.
+      if (user != null) {
+        unawaited(_analytics.logLogin());
+      }
     } on AuthException catch (e) {
       _errorMessage = e.message;
     } finally {
@@ -58,6 +64,7 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    unawaited(_analytics.logLogout());
     await _authService.signOut();
     // _onAuthStateChanged sẽ tự chuyển _state về unauthenticated.
   }

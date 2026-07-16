@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/work.dart';
 import '../services/openalex_service.dart';
+import '../firebase/analytics_service.dart';
 
 enum JournalDetailState { loading, success, error }
 
@@ -8,9 +10,18 @@ enum JournalDetailState { loading, success, error }
 // MultiProvider toàn app - tạo mới mỗi lần vào màn hình, tự dispose khi rời).
 class JournalDetailViewModel extends ChangeNotifier {
   final OpenAlexService _service;
+  final AnalyticsService _analytics;
 
-  JournalDetailViewModel({OpenAlexService? service})
-      : _service = service ?? OpenAlexService();
+  JournalDetailViewModel({OpenAlexService? service, AnalyticsService? analytics})
+      : _service = service ?? OpenAlexService(),
+        _analytics = analytics ?? AnalyticsService();
+
+  void logViewPublication(Work work) {
+    unawaited(_analytics.logViewPublication(
+      title: work.title,
+      year: work.publicationYear,
+    ));
+  }
 
   JournalDetailState _state = JournalDetailState.loading;
   JournalDetailState get state => _state;

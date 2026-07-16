@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/work.dart';
 import '../models/author.dart';
@@ -5,14 +6,25 @@ import '../models/journal.dart';
 import '../models/keyword.dart';
 import '../models/dashboard_stats.dart';
 import '../services/openalex_service.dart';
+import '../firebase/analytics_service.dart';
 
 enum AnalysisState { initial, loading, success, error }
 
 class AnalysisProvider extends ChangeNotifier {
   final OpenAlexService _service;
+  final AnalyticsService _analytics;
 
-  AnalysisProvider({OpenAlexService? service})
-      : _service = service ?? OpenAlexService();
+  AnalysisProvider({OpenAlexService? service, AnalyticsService? analytics})
+      : _service = service ?? OpenAlexService(),
+        _analytics = analytics ?? AnalyticsService();
+
+  void logViewJournal(TopJournal journal) {
+    unawaited(_analytics.logViewJournal(journal.displayName));
+  }
+
+  void logViewKeyword(Keyword keyword) {
+    unawaited(_analytics.logViewKeyword(keyword.displayName));
+  }
 
   AnalysisState _state = AnalysisState.initial;
   AnalysisState get state => _state;
