@@ -77,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Expanded(
                 child: TextField(
+                  key: const Key('home_search_field'),
                   controller: _searchController,
                   style: const TextStyle(color: Colors.black87),
                   decoration: const InputDecoration(
@@ -90,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 8),
               ElevatedButton(
+                key: const Key('home_search_button'),
                 onPressed: () => _search(_searchController.text),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -198,6 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildResultsHeader(provider),
         Expanded(
           child: ListView.builder(
+            key: const Key('home_results_list'),
             controller: _scrollController,
             itemCount:
                 1 + provider.works.length + (provider.hasMore ? 1 : 0),
@@ -214,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               final work = provider.works[workIndex];
               return PublicationCard(
+                key: ValueKey('publication_card_$workIndex'),
                 work: work,
                 rank: workIndex + 1,
                 onTap: () {

@@ -32,6 +32,23 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Bắt buộc cho Patrol E2E test (patrol_tests/) - patrol không tự
+        // apply runner này qua Flutter plugin registration như các package
+        // khác, cần khai báo thủ công theo docs chính thức.
+        testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    // Bắt buộc chạy Orchestrator: patrol (4.7.1) + patrol_cli (4.5.1) có bug
+    // đã xác minh - khi 1 file test có từ 2 patrolTest() trở lên, request
+    // runDartTest thứ 2 trong CÙNG tiến trình app bị lỗi
+    // "PatrolAppServiceClientException: Invalid response 500" phía native,
+    // dù bản thân test đó chạy đúng ở phía Dart (thấy qua PatrolBinding log:
+    // "... but it was not requested, so its status will not be reported back
+    // to the native side"). Orchestrator chạy mỗi test trong 1 tiến trình
+    // app riêng biệt nên né được bug này hoàn toàn.
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 
     buildTypes {
@@ -41,6 +58,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    androidTestUtil("androidx.test:orchestrator:1.5.1")
 }
 
 flutter {

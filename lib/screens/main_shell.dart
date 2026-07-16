@@ -32,13 +32,26 @@ class _MainShellState extends State<MainShell> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) => setState(() => _selectedIndex = index),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_rounded), label: 'Home'),
           NavigationDestination(
+            key: Key('nav_home'),
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            key: Key('nav_journals'),
             icon: Icon(Icons.library_books_rounded),
             label: 'Journals',
           ),
-          NavigationDestination(icon: Icon(Icons.label_rounded), label: 'Keywords'),
-          NavigationDestination(icon: Icon(Icons.person_rounded), label: 'Profile'),
+          NavigationDestination(
+            key: Key('nav_keywords'),
+            icon: Icon(Icons.label_rounded),
+            label: 'Keywords',
+          ),
+          NavigationDestination(
+            key: Key('nav_profile'),
+            icon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
         ],
       ),
     );

@@ -29,32 +29,43 @@ class OpenAlexService {
     );
   }
 
+  // Số lần thử lại khi bị OpenAlex giới hạn tần suất (429). Chờ backoff tăng
+  // dần (1s, 2s, 4s) rồi thử lại - throttle của OpenAlex thường chỉ tạm thời,
+  // nhất là khi gọi dồn dập (vd chạy nhiều test E2E liên tiếp).
+  static const _maxRetriesOn429 = 3;
+
   Future<Map<String, dynamic>> _get(Uri uri) async {
-    try {
-      final response = await _client.get(
-        uri,
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 15));
+    for (var attempt = 0; ; attempt++) {
+      try {
+        final response = await _client.get(
+          uri,
+          headers: {'Accept': 'application/json'},
+        ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      }
+        if (response.statusCode == 200) {
+          return json.decode(response.body) as Map<String, dynamic>;
+        }
 
-      if (response.statusCode == 429) {
-        throw const ApiException(
-          'Quá nhiều yêu cầu. Vui lòng đợi một chút rồi thử lại.',
-          statusCode: 429,
+        if (response.statusCode == 429) {
+          if (attempt < _maxRetriesOn429) {
+            await Future.delayed(Duration(seconds: 1 << attempt));
+            continue;
+          }
+          throw const ApiException(
+            'Quá nhiều yêu cầu. Vui lòng đợi một chút rồi thử lại.',
+            statusCode: 429,
+          );
+        }
+
+        throw ApiException(
+          'Lỗi máy chủ (${response.statusCode}). Vui lòng thử lại.',
+          statusCode: response.statusCode,
         );
+      } on ApiException {
+        rethrow;
+      } catch (e) {
+        throw ApiException('Không thể kết nối. Kiểm tra kết nối mạng của bạn.');
       }
-
-      throw ApiException(
-        'Lỗi máy chủ (${response.statusCode}). Vui lòng thử lại.',
-        statusCode: response.statusCode,
-      );
-    } on ApiException {
-      rethrow;
-    } catch (e) {
-      throw ApiException('Không thể kết nối. Kiểm tra kết nối mạng của bạn.');
     }
   }
 

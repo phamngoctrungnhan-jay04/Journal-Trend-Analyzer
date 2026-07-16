@@ -54,6 +54,7 @@ class JournalDetailScreen extends StatelessWidget {
                 }
                 final work = vm.works[index - 1];
                 return PublicationCard(
+                  key: ValueKey('journal_publication_card_${index - 1}'),
                   work: work,
                   rank: index,
                   onTap: () {

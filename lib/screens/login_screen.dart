@@ -48,6 +48,7 @@ class LoginScreen extends StatelessWidget {
                     auth.isSigningIn
                         ? const CircularProgressIndicator()
                         : ElevatedButton.icon(
+                            key: const Key('google_sign_in_button'),
                             onPressed: () =>
                                 context.read<AuthViewModel>().signInWithGoogle(),
                             icon: const Icon(Icons.login_rounded),

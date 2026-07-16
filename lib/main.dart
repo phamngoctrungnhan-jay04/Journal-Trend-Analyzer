@@ -23,13 +23,18 @@ Future<void> main() async {
 }
 
 class JournalTrendApp extends StatelessWidget {
-  const JournalTrendApp({super.key});
+  // Cho phép patrol_tests/ inject 1 AuthViewModel dùng FakeAuthService, bỏ
+  // qua màn hình chọn tài khoản Google thật (không automate UI ngoài app
+  // được). null ở app thật -> tự tạo AuthViewModel() mặc định như cũ.
+  final AuthViewModel? authViewModel;
+
+  const JournalTrendApp({super.key, this.authViewModel});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => authViewModel ?? AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => AnalysisProvider()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),

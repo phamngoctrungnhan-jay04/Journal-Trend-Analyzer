@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
 import '../firebase/auth_service.dart';
 import '../firebase/analytics_service.dart';
@@ -9,11 +8,14 @@ import '../models/user_profile.dart';
 enum AuthState { loading, authenticated, unauthenticated }
 
 class AuthViewModel extends ChangeNotifier {
-  final AuthService _authService;
+  final AuthServiceBase _authService;
   final AnalyticsService _analytics;
-  late final StreamSubscription<fb_auth.User?> _authSubscription;
+  late final StreamSubscription<UserProfile?> _authSubscription;
 
-  AuthViewModel({AuthService? authService, AnalyticsService? analytics})
+  // authService cho phép inject AuthServiceBase khác (vd FakeAuthService ở
+  // patrol_tests/) để bỏ qua màn hình chọn tài khoản Google thật khi chạy
+  // E2E test - không thể automate UI ngoài app của Google Sign-In.
+  AuthViewModel({AuthServiceBase? authService, AnalyticsService? analytics})
       : _authService = authService ?? AuthService(),
         _analytics = analytics ?? AnalyticsService() {
     _authSubscription =
@@ -36,10 +38,10 @@ class AuthViewModel extends ChangeNotifier {
 
   bool get isAuthenticated => _state == AuthState.authenticated;
 
-  void _onAuthStateChanged(fb_auth.User? user) {
-    _userProfile = user != null ? UserProfile.fromFirebaseUser(user) : null;
+  void _onAuthStateChanged(UserProfile? profile) {
+    _userProfile = profile;
     _state =
-        user != null ? AuthState.authenticated : AuthState.unauthenticated;
+        profile != null ? AuthState.authenticated : AuthState.unauthenticated;
     notifyListeners();
   }
 
@@ -49,10 +51,10 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final user = await _authService.signInWithGoogle();
+      final success = await _authService.signInWithGoogle();
       // Nếu thành công, _onAuthStateChanged sẽ tự cập nhật _state khi
       // FirebaseAuth phát sự kiện - không cần set thủ công ở đây.
-      if (user != null) {
+      if (success) {
         unawaited(_analytics.logLogin());
       }
     } on AuthException catch (e) {

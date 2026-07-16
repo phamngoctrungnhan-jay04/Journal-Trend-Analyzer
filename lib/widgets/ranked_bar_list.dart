@@ -166,6 +166,7 @@ class RankedBarList<T> extends StatelessWidget {
     final color = AppColors.chartColors[(rank - 1) % AppColors.chartColors.length];
 
     return InkWell(
+      key: ValueKey('ranked_item_$rank'),
       onTap: onTap != null ? () => onTap!(item) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),

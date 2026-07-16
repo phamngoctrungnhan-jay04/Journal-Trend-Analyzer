@@ -143,6 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 12),
               Card(
                 child: ListTile(
+                  key: const Key('logout_button'),
                   leading: const Icon(Icons.logout_rounded, color: AppColors.error),
                   title: const Text('Đăng xuất'),
                   onTap: () => context.read<AuthViewModel>().signOut(),
@@ -213,6 +214,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ElevatedButton.icon(
+                    key: const Key('export_pdf_button'),
                     onPressed: _export,
                     icon: const Icon(Icons.file_download_rounded),
                     label: const Text('Xuất báo cáo PDF'),
