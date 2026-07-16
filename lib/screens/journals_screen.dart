@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../viewmodels/analysis_provider.dart';
+import '../viewmodels/remote_config_provider.dart';
 import '../models/journal.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/error_widget.dart';
@@ -31,10 +32,12 @@ class JournalsScreen extends StatelessWidget {
               message: 'Chưa có dữ liệu. Hãy tìm kiếm một chủ đề ở tab Home trước.',
             );
           }
+          final maxDisplayed =
+              context.watch<RemoteConfigProvider>().maxJournalsDisplayed;
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: RankedBarList<TopJournal>(
-              items: provider.topJournals,
+              items: provider.topJournals.take(maxDisplayed).toList(),
               nameOf: (j) => j.displayName,
               countOf: (j) => j.worksCount,
               onTap: (j) {

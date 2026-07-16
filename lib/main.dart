@@ -7,6 +7,7 @@ import 'viewmodels/search_provider.dart';
 import 'viewmodels/analysis_provider.dart';
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
+import 'viewmodels/remote_config_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/login_screen.dart';
 import 'utils/constants.dart';
@@ -30,6 +31,7 @@ class JournalTrendApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => AnalysisProvider()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
+        ChangeNotifierProvider(create: (_) => RemoteConfigProvider()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
