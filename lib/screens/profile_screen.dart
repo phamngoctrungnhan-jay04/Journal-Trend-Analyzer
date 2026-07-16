@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/analysis_provider.dart';
 import '../viewmodels/export_viewmodel.dart';
+import '../viewmodels/notification_viewmodel.dart';
+import '../models/app_notification.dart';
 import '../utils/constants.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -43,10 +45,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _copyUrl(String url) {
-    Clipboard.setData(ClipboardData(text: url));
+  void _copyText(String text, String confirmMessage) {
+    Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã sao chép URL vào clipboard')),
+      SnackBar(content: Text(confirmMessage)),
     );
   }
 
@@ -96,6 +98,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 32),
               _buildExportCard(),
               const SizedBox(height: 12),
+              _buildNotificationCard(),
+              const SizedBox(height: 12),
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.logout_rounded, color: AppColors.error),
@@ -135,7 +139,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Text('Xuất báo cáo thành công!'),
                   const SizedBox(height: 8),
                   InkWell(
-                    onTap: () => _copyUrl(vm.downloadUrl!),
+                    onTap: () => _copyText(
+                      vm.downloadUrl!,
+                      'Đã sao chép URL vào clipboard',
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -176,5 +183,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  Widget _buildNotificationCard() {
+    return Consumer<NotificationViewModel>(
+      builder: (context, vm, _) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.notifications_rounded, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text('Trung tâm thông báo', style: AppTextStyles.heading3),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (vm.fcmToken != null) ...[
+                  const Text(
+                    'FCM token (dùng để gửi test message từ Firebase Console):',
+                    style: AppTextStyles.caption,
+                  ),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () => _copyText(
+                      vm.fcmToken!,
+                      'Đã sao chép FCM token vào clipboard',
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            vm.fcmToken!,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(Icons.copy_rounded, size: 18),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (vm.history.isEmpty)
+                  const Text(
+                    'Chưa có thông báo nào. Gửi thử từ Firebase Console.',
+                    style: AppTextStyles.bodySecondary,
+                  )
+                else
+                  ...vm.history.map((n) => _buildNotificationTile(n)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationTile(AppNotification notification) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            notification.title,
+            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+          if (notification.body.isNotEmpty)
+            Text(notification.body, style: AppTextStyles.bodySecondary),
+          Text(_formatTime(notification.receivedAt), style: AppTextStyles.caption),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(DateTime d) {
+    final hh = d.hour.toString().padLeft(2, '0');
+    final mm = d.minute.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    final mo = d.month.toString().padLeft(2, '0');
+    return '$hh:$mm $dd/$mo/${d.year}';
   }
 }
