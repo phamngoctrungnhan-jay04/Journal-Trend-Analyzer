@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/search_provider.dart';
 import '../viewmodels/analysis_provider.dart';
 import '../utils/constants.dart';
+import '../utils/topic_actions.dart';
 import '../utils/text_utils.dart';
 import '../widgets/publication_card.dart';
 import '../widgets/loading_widget.dart';
@@ -44,94 +45,143 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Định tuyến qua action dùng chung: ghi lại chủ đề + nạp cả SearchProvider
+  // lẫn AnalysisProvider, để Journals/Keywords cũng có dữ liệu theo chủ đề này.
   void _search(String query) {
-    if (query.trim().isEmpty) return;
-    FocusScope.of(context).unfocus();
-    context.read<SearchProvider>().search(query);
-    context.read<AnalysisProvider>().analyze(query);
+    selectTopic(context, query);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppConstants.appName),
-      ),
       body: Column(
         children: [
-          _buildSearchBar(),
+          _buildHeader(),
           Expanded(child: _buildBody()),
         ],
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  // Header gradient bo góc dưới, thay cho AppBar + thanh search phẳng cũ.
+  Widget _buildHeader() {
     return Container(
-      color: AppColors.primary,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: AppColors.primaryGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        boxShadow: AppShadows.card,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('home_search_field'),
-                  controller: _searchController,
-                  style: const TextStyle(color: Colors.black87),
-                  decoration: const InputDecoration(
-                    hintText: 'Nhập chủ đề nghiên cứu...',
-                    prefixIcon: Icon(Icons.search_rounded),
-                    suffixIcon: null,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.insights_rounded,
+                        color: Colors.white, size: 24),
                   ),
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: _search,
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppConstants.appName,
+                          style: AppTextStyles.heading2.copyWith(
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'Phân tích xu hướng nghiên cứu',
+                          style: AppTextStyles.caption.copyWith(
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                key: const Key('home_search_button'),
-                onPressed: () => _search(_searchController.text),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('home_search_field'),
+                      controller: _searchController,
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: const InputDecoration(
+                        hintText: 'Nhập chủ đề nghiên cứu...',
+                        prefixIcon: Icon(Icons.search_rounded),
+                      ),
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: _search,
+                    ),
                   ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      key: const Key('home_search_button'),
+                      onPressed: () => _search(_searchController.text),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                      ),
+                      child: const Text('Tìm'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: AppConstants.suggestedTopics.map((topic) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _headerChip(topic),
+                    );
+                  }).toList(),
                 ),
-                child: const Text('Tìm'),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: AppConstants.suggestedTopics.map((topic) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ActionChip(
-                    label: Text(topic),
-                    labelStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                    backgroundColor: Colors.white,
-                    side: BorderSide.none,
-                    onPressed: () {
-                      _searchController.text = topic;
-                      _search(topic);
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  // Chip trên header gradient: nền trắng, chữ tím - tương phản rõ.
+  Widget _headerChip(String topic, {bool subtle = false}) {
+    return ActionChip(
+      label: Text(topic),
+      labelStyle: AppTextStyles.chip.copyWith(
+        color: subtle ? Colors.white : AppColors.primary,
+      ),
+      backgroundColor:
+          subtle ? Colors.white.withValues(alpha: 0.18) : Colors.white,
+      side: BorderSide.none,
+      onPressed: () {
+        _searchController.text = topic;
+        _search(topic);
+      },
     );
   }
 
@@ -159,27 +209,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildInitialState() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.science_rounded,
-            size: 80,
-            color: AppColors.primary.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Khám phá xu hướng nghiên cứu',
-            style: AppTextStyles.heading2.copyWith(
-              color: AppColors.textSecondary,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.science_rounded,
+                size: 44,
+                color: AppColors.primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Nhập chủ đề hoặc chọn gợi ý phía trên',
-            style: AppTextStyles.bodySecondary,
-          ),
-        ],
+            const SizedBox(height: 20),
+            Text(
+              'Khám phá xu hướng nghiên cứu',
+              style: AppTextStyles.heading2,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Nhập chủ đề hoặc chọn gợi ý phía trên',
+              style: AppTextStyles.bodySecondary,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -251,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return const SizedBox.shrink();
         }
         return Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -314,12 +375,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildResultsHeader(SearchProvider provider) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: AppColors.surface,
-      child: Text(
-        'Tìm thấy ${_formatCount(provider.totalResults)} bài báo cho "${provider.currentQuery}"',
-        style: AppTextStyles.bodySecondary,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+      child: Row(
+        children: [
+          const Icon(Icons.article_rounded,
+              size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Tìm thấy ${_formatCount(provider.totalResults)} bài báo cho "${provider.currentQuery}"',
+              style: AppTextStyles.bodySecondary
+                  .copyWith(fontWeight: FontWeight.w600),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

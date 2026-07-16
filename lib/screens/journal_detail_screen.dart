@@ -77,7 +77,7 @@ class JournalDetailScreen extends StatelessWidget {
 
   Widget _buildStatsHeader(JournalDetailViewModel vm) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Row(
         children: [
           Expanded(

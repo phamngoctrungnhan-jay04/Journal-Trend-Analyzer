@@ -39,6 +39,9 @@ dependencies:
   # State management - quản lý trạng thái toàn app
   provider: ^6.1.2
 
+  # Font hiện đại (Plus Jakarta Sans) cho UI - tải runtime, cache tự động
+  google_fonts: ^6.2.1
+
   # Vẽ biểu đồ (bar chart, line chart, pie chart)
   fl_chart: ^0.70.2
   firebase_core: ^4.12.1

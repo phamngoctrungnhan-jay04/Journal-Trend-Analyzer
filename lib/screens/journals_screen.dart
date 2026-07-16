@@ -29,13 +29,14 @@ class JournalsScreen extends StatelessWidget {
           }
           if (provider.isInitial) {
             return const EmptyResultWidget(
-              message: 'Chưa có dữ liệu. Hãy tìm kiếm một chủ đề ở tab Home trước.',
+              message:
+                  'Chọn một chủ đề ở tab Home hoặc Keywords để xem xếp hạng tạp chí.',
             );
           }
           final maxDisplayed =
               context.watch<RemoteConfigProvider>().maxJournalsDisplayed;
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: RankedBarList<TopJournal>(
               items: provider.topJournals.take(maxDisplayed).toList(),
               nameOf: (j) => j.displayName,

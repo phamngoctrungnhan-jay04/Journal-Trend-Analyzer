@@ -94,64 +94,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Hồ sơ')),
       body: Consumer<AuthViewModel>(
         builder: (context, auth, _) {
           final user = auth.userProfile;
-          return ListView(
-            padding: const EdgeInsets.all(24),
+          return Column(
             children: [
-              Center(
-                child: CircleAvatar(
-                  radius: 44,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                  backgroundImage: (user?.photoUrl != null)
-                      ? NetworkImage(user!.photoUrl!)
-                      : null,
-                  child: user?.photoUrl == null
-                      ? Text(
-                          (user?.displayName?.isNotEmpty ?? false)
-                              ? user!.displayName![0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                user?.displayName ?? 'Người dùng',
-                style: AppTextStyles.heading2,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                user?.email ?? '',
-                style: AppTextStyles.bodySecondary,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              _buildExportCard(),
-              const SizedBox(height: 12),
-              _buildNotificationCard(),
-              const SizedBox(height: 12),
-              _buildDebugCard(),
-              const SizedBox(height: 12),
-              Card(
-                child: ListTile(
-                  key: const Key('logout_button'),
-                  leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-                  title: const Text('Đăng xuất'),
-                  onTap: () => context.read<AuthViewModel>().signOut(),
+              _buildProfileHeader(user?.displayName, user?.email, user?.photoUrl),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                  children: [
+                    _buildExportCard(),
+                    const SizedBox(height: 14),
+                    _buildNotificationCard(),
+                    const SizedBox(height: 14),
+                    _buildDebugCard(),
+                    const SizedBox(height: 14),
+                    _buildLogoutCard(),
+                  ],
                 ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  // Header gradient chứa avatar + tên + email.
+  Widget _buildProfileHeader(String? name, String? email, String? photoUrl) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: AppColors.primaryGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        boxShadow: AppShadows.card,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Hồ sơ',
+                  style: AppTextStyles.heading3.copyWith(color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 42,
+                  backgroundColor: Colors.white.withValues(alpha: 0.22),
+                  backgroundImage:
+                      (photoUrl != null) ? NetworkImage(photoUrl) : null,
+                  child: photoUrl == null
+                      ? Text(
+                          (name?.isNotEmpty ?? false)
+                              ? name![0].toUpperCase()
+                              : '?',
+                          style: AppTextStyles.heading1.copyWith(
+                            color: Colors.white,
+                            fontSize: 32,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                name ?? 'Người dùng',
+                style: AppTextStyles.heading2.copyWith(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                email ?? '',
+                style: AppTextStyles.bodySecondary.copyWith(
+                  color: Colors.white.withValues(alpha: 0.85),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Header nhất quán cho các card: icon trong ô bo tròn màu + tiêu đề.
+  Widget _cardHeader(IconData icon, String title, {Color color = AppColors.primary}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Text(title, style: AppTextStyles.heading3),
+      ],
+    );
+  }
+
+  Widget _buildLogoutCard() {
+    return Card(
+      child: ListTile(
+        key: const Key('logout_button'),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+        ),
+        title: Text(
+          'Đăng xuất',
+          style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+        onTap: () => context.read<AuthViewModel>().signOut(),
       ),
     );
   }
@@ -167,14 +248,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Text('Xuất báo cáo', style: AppTextStyles.heading3),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                _cardHeader(Icons.picture_as_pdf_rounded, 'Xuất báo cáo'),
+                const SizedBox(height: 14),
                 if (vm.isLoading)
                   const Center(child: CircularProgressIndicator())
                 else if (vm.isSuccess && vm.downloadUrl != null) ...[
@@ -237,16 +312,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.notifications_rounded, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Text('Trung tâm thông báo', style: AppTextStyles.heading3),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                _cardHeader(Icons.notifications_rounded, 'Trung tâm thông báo'),
+                const SizedBox(height: 14),
                 if (vm.fcmToken != null) ...[
-                  const Text(
+                  Text(
                     'FCM token (dùng để gửi test message từ Firebase Console):',
                     style: AppTextStyles.caption,
                   ),
@@ -276,7 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 12),
                 ],
                 if (vm.history.isEmpty)
-                  const Text(
+                  Text(
                     'Chưa có thông báo nào. Gửi thử từ Firebase Console.',
                     style: AppTextStyles.bodySecondary,
                   )
@@ -315,14 +384,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.bug_report_rounded, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text('Công cụ debug (Crashlytics)', style: AppTextStyles.heading3),
-              ],
-            ),
-            const SizedBox(height: 12),
+            _cardHeader(Icons.bug_report_rounded, 'Công cụ debug (Crashlytics)'),
+            const SizedBox(height: 14),
             OutlinedButton(
               onPressed: _triggerHandledException,
               child: const Text('Trigger handled exception'),

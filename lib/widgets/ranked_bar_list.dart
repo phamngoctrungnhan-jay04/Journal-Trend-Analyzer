@@ -44,8 +44,15 @@ class RankedBarList<T> extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, color: AppColors.primary, size: 22),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,61 +172,101 @@ class RankedBarList<T> extends StatelessWidget {
     final fraction = (count / maxCount).clamp(0.0, 1.0);
     final color = AppColors.chartColors[(rank - 1) % AppColors.chartColors.length];
 
-    return InkWell(
-      key: ValueKey('ranked_item_$rank'),
-      onTap: onTap != null ? () => onTap!(item) : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 28,
-              child: Text(
-                '$rank',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: rank <= 3 ? AppColors.primary : AppColors.textSecondary,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          key: ValueKey('ranked_item_$rank'),
+          onTap: onTap != null ? () => onTap!(item) : null,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                _rankBadge(rank, color),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nameOf(item),
+                        style:
+                            AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: fraction,
+                          backgroundColor: color.withValues(alpha: 0.12),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                          minHeight: 8,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${TextUtils.formatCount(count)} bài báo',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
+                if (onTap != null)
+                  const Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textHint, size: 20),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nameOf(item),
-                    style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: fraction,
-                      backgroundColor: color.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                      minHeight: 6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${TextUtils.formatCount(count)} bài',
-              style: AppTextStyles.caption.copyWith(
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-            if (onTap != null) ...[
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textHint, size: 18),
-            ],
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Badge hạng hình tròn: top 3 màu huy chương vàng/bạc/đồng, còn lại theo màu
+  // biểu đồ của hàng.
+  Widget _rankBadge(int rank, Color color) {
+    final Color bg;
+    switch (rank) {
+      case 1:
+        bg = const Color(0xFFF5B301); // vàng
+        break;
+      case 2:
+        bg = const Color(0xFF9AA5B1); // bạc
+        break;
+      case 3:
+        bg = const Color(0xFFC77B3B); // đồng
+        break;
+      default:
+        bg = color;
+    }
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: bg,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: bg.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          '$rank',
+          style: AppTextStyles.heading3.copyWith(
+            color: Colors.white,
+            fontSize: 16,
+          ),
         ),
       ),
     );

@@ -20,57 +20,51 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, size: 20, color: color),
-                ),
-                const Spacer(),
-              ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
             ),
-            const SizedBox(height: 12),
+            child: Icon(icon, size: 22, color: color),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: AppTextStyles.heading1.copyWith(color: color, fontSize: 24),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
             Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: color,
+              subtitle!,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textHint,
+                fontSize: 11,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: AppTextStyles.caption,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtitle!,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textHint,
-                  fontSize: 11,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }

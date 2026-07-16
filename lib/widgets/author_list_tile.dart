@@ -15,73 +15,95 @@ class AuthorListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final barFraction = _getBarFraction();
+    final color =
+        AppColors.chartColors[(rank - 1) % AppColors.chartColors.length];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 28,
-            child: Text(
-              '$rank',
-              style: AppTextStyles.caption.copyWith(
-                fontWeight: FontWeight.bold,
-                color: rank <= 3 ? AppColors.primary : AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: AppColors.chartColors[(rank - 1) % AppColors.chartColors.length]
-                .withValues(alpha: 0.15),
-            child: Text(
-              author.displayName.isNotEmpty
-                  ? author.displayName[0].toUpperCase()
-                  : '?',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.chartColors[(rank - 1) % AppColors.chartColors.length],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  author.displayName,
-                  style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: barFraction,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.chartColors[(rank - 1) % AppColors.chartColors.length],
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              _rankBadge(color),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      author.displayName,
+                      style:
+                          AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    minHeight: 6,
-                  ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: barFraction,
+                        backgroundColor: color.withValues(alpha: 0.12),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        minHeight: 8,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${author.worksCount} bài báo',
+                      style: AppTextStyles.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Text(
-            '${author.worksCount} bài',
-            style: AppTextStyles.caption.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
+        ),
+      ),
+    );
+  }
+
+  Widget _rankBadge(Color color) {
+    final Color bg;
+    switch (rank) {
+      case 1:
+        bg = const Color(0xFFF5B301);
+        break;
+      case 2:
+        bg = const Color(0xFF9AA5B1);
+        break;
+      case 3:
+        bg = const Color(0xFFC77B3B);
+        break;
+      default:
+        bg = color;
+    }
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: bg,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: bg.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
+      ),
+      child: Center(
+        child: Text(
+          '$rank',
+          style: AppTextStyles.heading3.copyWith(
+            color: Colors.white,
+            fontSize: 16,
+          ),
+        ),
       ),
     );
   }

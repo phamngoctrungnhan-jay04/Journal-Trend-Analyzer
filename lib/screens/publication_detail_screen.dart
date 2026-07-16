@@ -25,25 +25,25 @@ class PublicationDetailScreen extends StatelessWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTitleCard(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _buildMetaGrid(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _buildAuthorsCard(),
             if (work.abstractText != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildAbstractCard(),
             ],
             if (work.landingPageUrl != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildOriginalLinkCard(context),
             ],
             if (work.doiUrl != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildDoiCard(context),
             ],
             const SizedBox(height: 24),
@@ -161,6 +161,23 @@ class PublicationDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _sectionHeader(IconData icon, String title) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Text(title, style: AppTextStyles.heading3),
+      ],
+    );
+  }
+
   Widget _buildAuthorsCard() {
     return Card(
       child: Padding(
@@ -168,14 +185,8 @@ class PublicationDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.people_rounded, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                Text('Tác giả', style: AppTextStyles.heading3),
-              ],
-            ),
-            const SizedBox(height: 12),
+            _sectionHeader(Icons.people_rounded, 'Tác giả'),
+            const SizedBox(height: 14),
             ...work.authorships.asMap().entries.map((entry) {
               final i = entry.key;
               final authorship = entry.value;
@@ -240,14 +251,8 @@ class PublicationDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.article_rounded, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                Text('Tóm tắt', style: AppTextStyles.heading3),
-              ],
-            ),
-            const SizedBox(height: 12),
+            _sectionHeader(Icons.article_rounded, 'Tóm tắt'),
+            const SizedBox(height: 14),
             Text(
               work.abstractText!,
               style: AppTextStyles.body.copyWith(height: 1.6),

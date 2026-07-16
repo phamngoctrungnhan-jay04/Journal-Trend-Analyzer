@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'firebase/crash_service.dart';
+import 'viewmodels/topic_provider.dart';
 import 'viewmodels/search_provider.dart';
 import 'viewmodels/analysis_provider.dart';
 import 'viewmodels/auth_viewmodel.dart';
@@ -35,6 +37,7 @@ class JournalTrendApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => authViewModel ?? AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => TopicProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => AnalysisProvider()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
@@ -50,69 +53,108 @@ class JournalTrendApp extends StatelessWidget {
   }
 
   ThemeData _buildTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        brightness: Brightness.light,
-      ),
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.light,
+    ).copyWith(
+      primary: AppColors.primary,
+      secondary: AppColors.accent,
+      surface: AppColors.surface,
+    );
+    final base = ThemeData(useMaterial3: true, colorScheme: colorScheme);
+
+    return base.copyWith(
       scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: const AppBarTheme(
+      // Áp font Plus Jakarta Sans cho toàn bộ text mặc định của app.
+      textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+        bodyColor: AppColors.textPrimary,
+        displayColor: AppColors.textPrimary,
+      ),
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+        titleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
+          letterSpacing: -0.3,
         ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardBackground,
-        elevation: 2,
-        shadowColor: Colors.black12,
+        elevation: 3,
+        // Bỏ tint tông màu M3 để card trắng sạch, chỉ giữ shadow tím mềm.
+        surfaceTintColor: Colors.transparent,
+        shadowColor: AppColors.primary.withValues(alpha: 0.18),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.card),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
+        hintStyle: TextStyle(color: AppColors.textHint),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.field),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderRadius: BorderRadius.circular(AppRadius.field),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(AppRadius.field),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          horizontal: 18,
+          vertical: 16,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          minimumSize: const Size(0, 52),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.field),
           ),
           elevation: 0,
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+        backgroundColor: AppColors.surfaceAlt,
         labelStyle: AppTextStyles.chip,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        side: BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        labelTextStyle: WidgetStateProperty.all(
+          GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.primary
+                : AppColors.textHint,
+          ),
         ),
       ),
     );

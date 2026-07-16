@@ -40,7 +40,7 @@ class KeywordDetailScreen extends StatelessWidget {
               );
             }
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               children: [
                 YearlyTrendChart(trends: vm.yearlyTrends),
                 const SizedBox(height: 24),
@@ -66,8 +66,15 @@ class KeywordDetailScreen extends StatelessWidget {
   Widget _buildAuthorsHeader() {
     return Row(
       children: [
-        const Icon(Icons.person_rounded, color: AppColors.primary, size: 22),
-        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
