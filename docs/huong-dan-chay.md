@@ -22,58 +22,113 @@ flutter --version
 flutter doctor
 ```
 
-### ⚠️ Máy mới clone về: BẮT BUỘC đăng ký SHA-1
-
-**Triệu chứng nếu bỏ qua:** app **vẫn build và chạy bình thường**, nhưng bấm
-"Đăng nhập với Google" thì **luôn thất bại** (`ApiException: 10` /
-`DEVELOPER_ERROR`) → kẹt ở màn Login, không vào được app.
+### ⚠️ Máy mới clone về: BẮT BUỘC đăng ký SHA-1 (phải làm ĐỦ 2 LỚP)
 
 **Nguyên nhân:** Google Sign-In trên Android xác thực bằng **SHA-1 của
-debug.keystore**. Mỗi máy dev có `debug.keystore` **riêng, SHA-1 khác nhau** (do
-Android Studio tự sinh khi cài). Firebase chỉ cấp idToken cho SHA-1 **đã đăng ký**.
+`debug.keystore`**. Mỗi máy dev có `debug.keystore` **riêng, SHA-1 khác nhau** (do
+Android Studio tự sinh khi cài). Google chỉ chấp nhận SHA-1 **đã đăng ký**.
+
+**Triệu chứng chung:** app **vẫn build và chạy bình thường**, nhưng **kẹt ở màn
+Login** — bấm "Đăng nhập với Google" là báo lỗi.
 
 > Chỉ **Google Sign-In** cần SHA-1. Các dịch vụ khác (FCM, Analytics, Crashlytics,
 > Remote Config, Storage) **không cần** — chúng chạy được ngay trên máy mới.
 
-**Cách xử lý (mỗi thành viên làm 1 lần):**
+SHA-1 bị chặn ở **hai lớp độc lập**. ⚠️ **Thêm ở lớp 1 KHÔNG tự động mở lớp 2** —
+thiếu lớp nào cũng không đăng nhập được:
 
-1. **Lấy SHA-1 của máy mình:**
-   ```bash
-   cd android
-   ./gradlew signingReport
-   ```
-   Lấy dòng `SHA1:` ở variant **debug** (`Config: debug`).
+| Lớp | Quản ở đâu | Thông báo lỗi nếu thiếu |
+|-----|-----------|------------------------|
+| **1. OAuth client** | Firebase Console | `ApiException: 10` / `DEVELOPER_ERROR` → "Đăng nhập Google thất bại." |
+| **2. Giới hạn API key** | Google Cloud Console | `An internal error has occurred. [ Requests from this Android client application com.prm393.journal_trend_analyzer are blocked. ]` |
 
-2. **Đăng ký vào Firebase** (người sở hữu project làm):
-   Firebase Console → ⚙️ **Project settings** → mục **Your apps** → app Android
-   `com.prm393.journal_trend_analyzer` → **Add fingerprint** → dán SHA-1 → **Save**.
+---
 
-   Link nhanh: `https://console.firebase.google.com/project/prm393-lab3-se1834-27919/settings/general`
+#### Bước 1 — Lấy SHA-1 của máy mới
 
-   > Firebase cho phép **nhiều SHA-1 cùng lúc** — thêm fingerprint mới **không làm
-   > mất** của người khác. Cả nhóm mỗi người thêm một cái.
+```bash
+cd android
+./gradlew signingReport
+```
 
-3. **Tải lại `google-services.json`** ở cùng trang đó → thay file
-   `android/app/google-services.json` → commit. File mới sẽ có thêm một
-   `oauth_client` với `client_type: 1` ứng với SHA-1 vừa thêm.
+Lấy dòng `SHA1:` ở variant **debug** (`Config: debug`), dạng
+`AA:BB:CC:...` (20 cặp hex).
 
-4. **Máy mới chạy lại:**
-   ```bash
-   git pull
-   flutter clean
-   flutter pub get
-   flutter run
-   ```
+> Nếu `gradlew` báo *"JAVA_HOME is not set"*: dùng keytool của JDK do Android
+> Studio cài kèm (đường dẫn xem bằng `flutter doctor -v`, dòng *Java binary at*):
+> ```bash
+> <duong-dan-jdk>/bin/keytool -list -v \
+>   -keystore ~/.android/debug.keystore \
+>   -alias androiddebugkey -storepass android -keypass android
+> ```
 
-> Google cần **vài phút** để propagate fingerprint mới. Nếu vẫn lỗi `ApiException:
-> 10` ngay sau khi thêm, đợi ~5 phút rồi thử lại.
+#### Bước 2 — LỚP 1: Đăng ký OAuth client (Firebase Console)
 
-**Kiểm tra nhanh cấu hình có đúng không:**
+`https://console.firebase.google.com/project/prm393-lab3-se1834-27919/settings/general`
+
+→ mục **Your apps** → app Android `com.prm393.journal_trend_analyzer` →
+**Add fingerprint** → dán SHA-1 → **Save**.
+
+> Firebase cho phép **nhiều SHA-1 cùng lúc** — thêm fingerprint mới **không làm
+> mất** của người khác. Cả nhóm mỗi người thêm một cái.
+
+#### Bước 3 — Tải lại `google-services.json`
+
+Vẫn ở trang đó → nút **google-services.json** → thay file
+`android/app/google-services.json` → **commit + push**. File mới sẽ có thêm một
+`oauth_client` với `client_type: 1` ứng với SHA-1 vừa thêm.
+
+#### Bước 4 — LỚP 2: Nới giới hạn API key (Google Cloud Console)
+
+⚠️ **Đây là bước hay bị bỏ sót nhất** — làm xong bước 2–3 mà quên bước này thì vẫn
+dính lỗi *"...are blocked"*.
+
+`https://console.cloud.google.com/apis/credentials?project=prm393-lab3-se1834-27919`
+
+1. Bảng **API Keys** → bấm **"Android key (auto created by Firebase)"**
+   (cột *Restrictions* ghi **"Android apps, 25 APIs"**).
+2. Kéo tới **Application restrictions** → đang chọn **Android apps**.
+3. Bấm **+ Add** → điền:
+   - **Package name:** `com.prm393.journal_trend_analyzer`
+   - **SHA-1 certificate fingerprint:** SHA-1 của máy mới
+4. Bấm **Done** → kéo xuống cuối bấm **Save** ⚠️ (quên Save là không ăn).
+
+> Không đụng vào *iOS key* / *Browser key* — không liên quan.
+
+#### Bước 5 — Máy mới chạy lại
+
+```bash
+git pull
+flutter clean
+flutter pub get
+flutter run
+```
+
+> Google cần **~5 phút** (đôi khi 10–15 phút) để propagate. Không cần rebuild sau
+> khi sửa lớp 2 — API key không đổi, chỉ cần tắt hẳn app rồi mở lại.
+
+---
+
+#### Kiểm tra nhanh cấu hình
+
 - SHA-1 máy bạn phải xuất hiện trong `android/app/google-services.json` ở trường
-  `certificate_hash` (dạng thường, không dấu hai chấm).
+  `certificate_hash` (dạng chữ thường, **không** dấu hai chấm).
 - `client_id` của `client_type: 3` (Web client) trong file đó phải **khớp** hằng số
   `_webClientId` trong [lib/firebase/auth_service.dart](../lib/firebase/auth_service.dart)
   — nếu Firebase đổi web client thì phải sửa hằng số này trong code.
+
+#### Vẫn lỗi sau khi làm đủ 2 lớp?
+
+1. Đợi thêm **10–15 phút** (propagate lâu hơn mốc 5 phút Google ghi).
+2. Trên máy đó: **Settings → Apps → Journal Trend Analyzer → Storage → Clear data**
+   → mở lại (xoá token cache của Play Services).
+3. Vẫn lỗi → tạm đổi **Application restrictions** sang **None** → **Save**. Nếu
+   chạy được thì chắc chắn SHA-1 ở lớp 2 **nhập sai** (thừa/thiếu ký tự) → nhập lại
+   cho đúng rồi bật **Android apps** trở lại.
+
+> Đặt **None** cũng là phương án nhanh khi demo (khỏi thêm SHA-1 từng máy), nhưng
+> kém an toàn hơn — key không còn ràng buộc theo app. Với đồ án thì chấp nhận
+> được; sản phẩm thật nên giữ **Android apps**.
 
 ---
 
