@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/work.dart';
 import '../utils/constants.dart';
 import '../utils/text_utils.dart';
@@ -15,30 +16,34 @@ class PublicationDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Chi tiết bài báo'),
         actions: [
-          if (work.doiUrl != null)
+          if (work.landingPageUrl != null)
             IconButton(
               icon: const Icon(Icons.open_in_new_rounded),
-              tooltip: 'Mở DOI',
-              onPressed: () => _copyDoi(context),
+              tooltip: 'Xem bài gốc',
+              onPressed: () => _openLink(context, work.landingPageUrl!),
             ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTitleCard(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _buildMetaGrid(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _buildAuthorsCard(),
             if (work.abstractText != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildAbstractCard(),
             ],
+            if (work.landingPageUrl != null) ...[
+              const SizedBox(height: 14),
+              _buildOriginalLinkCard(context),
+            ],
             if (work.doiUrl != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _buildDoiCard(context),
             ],
             const SizedBox(height: 24),
@@ -156,6 +161,23 @@ class PublicationDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _sectionHeader(IconData icon, String title) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Text(title, style: AppTextStyles.heading3),
+      ],
+    );
+  }
+
   Widget _buildAuthorsCard() {
     return Card(
       child: Padding(
@@ -163,14 +185,8 @@ class PublicationDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.people_rounded, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                Text('Tác giả', style: AppTextStyles.heading3),
-              ],
-            ),
-            const SizedBox(height: 12),
+            _sectionHeader(Icons.people_rounded, 'Tác giả'),
+            const SizedBox(height: 14),
             ...work.authorships.asMap().entries.map((entry) {
               final i = entry.key;
               final authorship = entry.value;
@@ -235,14 +251,8 @@ class PublicationDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.article_rounded, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                Text('Tóm tắt', style: AppTextStyles.heading3),
-              ],
-            ),
-            const SizedBox(height: 12),
+            _sectionHeader(Icons.article_rounded, 'Tóm tắt'),
+            const SizedBox(height: 14),
             Text(
               work.abstractText!,
               style: AppTextStyles.body.copyWith(height: 1.6),
@@ -273,6 +283,26 @@ class PublicationDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildOriginalLinkCard(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.open_in_new_rounded, color: AppColors.primary),
+        title: const Text('Bài báo gốc'),
+        subtitle: Text(
+          work.landingPageUrl!,
+          style: const TextStyle(
+            color: AppColors.primary,
+            decoration: TextDecoration.underline,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+        onTap: () => _openLink(context, work.landingPageUrl!),
+      ),
+    );
+  }
+
   void _copyDoi(BuildContext context) {
     if (work.doiUrl == null) return;
     Clipboard.setData(ClipboardData(text: work.doiUrl!));
@@ -282,5 +312,16 @@ class PublicationDetailScreen extends StatelessWidget {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _openLink(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    final opened = uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể mở liên kết.')),
+      );
+    }
   }
 }

@@ -60,10 +60,10 @@ class _SkeletonCardState extends State<SkeletonCard>
         opacity: _animation.value,
         child: Container(
           height: widget.height,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppRadius.card),
           ),
         ),
       ),

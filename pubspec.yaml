@@ -39,11 +39,26 @@ dependencies:
   # State management - quản lý trạng thái toàn app
   provider: ^6.1.2
 
+  # Font hiện đại (Plus Jakarta Sans) cho UI - tải runtime, cache tự động
+  google_fonts: ^6.2.1
+
   # Vẽ biểu đồ (bar chart, line chart, pie chart)
   fl_chart: ^0.70.2
+  firebase_core: ^4.12.1
+  firebase_auth: ^6.5.6
+  google_sign_in: ^7.2.0
+  url_launcher: ^6.3.2
+  firebase_analytics: ^12.4.5
+  firebase_storage: ^13.4.5
+  pdf: ^3.13.0
+  firebase_messaging: ^16.4.3
+  firebase_remote_config: ^6.5.5
+  firebase_crashlytics: ^5.2.6
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -52,6 +67,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  patrol: ^4.7.1
+
+patrol:
+  android:
+    package_name: com.prm393.journal_trend_analyzer
+  test_directory: patrol_tests
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -63,6 +84,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    # Font Unicode (hỗ trợ dấu tiếng Việt) nhúng vào PDF report - package
+    # `pdf` không hỗ trợ tiếng Việt bằng font Base14 mặc định.
+    - assets/fonts/NotoSans-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

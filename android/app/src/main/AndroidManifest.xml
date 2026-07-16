@@ -25,6 +25,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Tắt Impeller: một số emulator Android không present frame đầu tiên
+             với Impeller (màn đen tới khi bật/tắt màn hình mới hiện). Ép dùng
+             Skia cho ổn định. Bỏ dòng này nếu chạy trên máy thật gặp vấn đề. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -40,6 +47,12 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Bắt buộc cho url_launcher trên Android 11+ (package visibility)
+             để mở link "bài báo gốc"/DOI trong trình duyệt ngoài. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 </manifest>

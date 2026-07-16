@@ -4,6 +4,7 @@ Bộ tài liệu này mô tả kiến trúc và từng luồng nghiệp vụ (bu
 
 ## Mục lục
 
+0. [Hướng dẫn chạy project & Luồng sử dụng](./huong-dan-chay.md) — cài đặt, chạy app, chạy Patrol test, navigation flow (Lab 03)
 1. [00 — Tổng quan kiến trúc](./flows/00-tong-quan.md)
 2. [01 — Luồng Tìm kiếm bài báo (Search)](./flows/01-tim-kiem.md) — FR 4.1
 3. [02 — Luồng Xem chi tiết bài báo (Publication Detail)](./flows/02-chi-tiet-bai-bao.md) — FR 4.2

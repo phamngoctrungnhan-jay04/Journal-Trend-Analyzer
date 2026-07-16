@@ -13,9 +13,9 @@ class AppErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return _ScrollSafeCenter(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -62,9 +62,9 @@ class EmptyResultWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return _ScrollSafeCenter(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -82,6 +82,29 @@ class EmptyResultWidget extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Căn giữa nội dung khi đủ chỗ, nhưng cho phép CUỘN khi chiều cao bị co lại
+// (vd header Home cao thêm) — tránh lỗi "BOTTOM OVERFLOWED". minHeight =
+// maxHeight của vùng cha để nội dung vẫn nằm giữa khi màn đủ rộng.
+class _ScrollSafeCenter extends StatelessWidget {
+  final Widget child;
+
+  const _ScrollSafeCenter({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
+          ),
+        );
+      },
     );
   }
 }

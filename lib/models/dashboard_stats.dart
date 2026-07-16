@@ -1,6 +1,7 @@
 import 'work.dart';
 import 'author.dart';
 import 'journal.dart';
+import 'keyword.dart';
 
 // Tổng hợp tất cả insights cho FR 4.7 Research Trend Dashboard
 class DashboardStats {
@@ -11,6 +12,7 @@ class DashboardStats {
   final int? mostActiveYearCount;
   final TopJournal? topJournal;
   final TopAuthor? topAuthor;
+  final Keyword? topKeyword;
   final Work? mostInfluentialPaper;
 
   const DashboardStats({
@@ -21,6 +23,7 @@ class DashboardStats {
     this.mostActiveYearCount,
     this.topJournal,
     this.topAuthor,
+    this.topKeyword,
     this.mostInfluentialPaper,
   });
 
@@ -31,6 +34,7 @@ class DashboardStats {
     required List<YearlyTrend> yearlyTrends,
     required List<TopJournal> topJournals,
     required List<TopAuthor> topAuthors,
+    required List<Keyword> topKeywords,
     required List<Work> topCitedWorks,
     required double averageCitationCount,
   }) {
@@ -50,6 +54,7 @@ class DashboardStats {
       mostActiveYearCount: mostActiveYearTrend?.count,
       topJournal: topJournals.isNotEmpty ? topJournals.first : null,
       topAuthor: topAuthors.isNotEmpty ? topAuthors.first : null,
+      topKeyword: topKeywords.isNotEmpty ? topKeywords.first : null,
       mostInfluentialPaper: topCitedWorks.isNotEmpty ? topCitedWorks.first : null,
     );
   }

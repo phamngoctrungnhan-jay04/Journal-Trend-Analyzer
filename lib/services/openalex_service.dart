@@ -29,32 +29,43 @@ class OpenAlexService {
     );
   }
 
+  // Số lần thử lại khi bị OpenAlex giới hạn tần suất (429). Chờ backoff tăng
+  // dần (1s, 2s, 4s) rồi thử lại - throttle của OpenAlex thường chỉ tạm thời,
+  // nhất là khi gọi dồn dập (vd chạy nhiều test E2E liên tiếp).
+  static const _maxRetriesOn429 = 3;
+
   Future<Map<String, dynamic>> _get(Uri uri) async {
-    try {
-      final response = await _client.get(
-        uri,
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 15));
+    for (var attempt = 0; ; attempt++) {
+      try {
+        final response = await _client.get(
+          uri,
+          headers: {'Accept': 'application/json'},
+        ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      }
+        if (response.statusCode == 200) {
+          return json.decode(response.body) as Map<String, dynamic>;
+        }
 
-      if (response.statusCode == 429) {
-        throw const ApiException(
-          'Quá nhiều yêu cầu. Vui lòng đợi một chút rồi thử lại.',
-          statusCode: 429,
+        if (response.statusCode == 429) {
+          if (attempt < _maxRetriesOn429) {
+            await Future.delayed(Duration(seconds: 1 << attempt));
+            continue;
+          }
+          throw const ApiException(
+            'Quá nhiều yêu cầu. Vui lòng đợi một chút rồi thử lại.',
+            statusCode: 429,
+          );
+        }
+
+        throw ApiException(
+          'Lỗi máy chủ (${response.statusCode}). Vui lòng thử lại.',
+          statusCode: response.statusCode,
         );
+      } on ApiException {
+        rethrow;
+      } catch (e) {
+        throw ApiException('Không thể kết nối. Kiểm tra kết nối mạng của bạn.');
       }
-
-      throw ApiException(
-        'Lỗi máy chủ (${response.statusCode}). Vui lòng thử lại.',
-        statusCode: response.statusCode,
-      );
-    } on ApiException {
-      rethrow;
-    } catch (e) {
-      throw ApiException('Không thể kết nối. Kiểm tra kết nối mạng của bạn.');
     }
   }
 
@@ -158,6 +169,85 @@ class OpenAlexService {
       'filter': 'type:article',
       'group_by': 'authorships.author.id',
       'per_page': perPage.toString(),
+    });
+    return _get(uri);
+  }
+
+  // Keywords - top từ khoá theo tần suất (dùng group_by topics.id, không
+  // dùng concepts.id vì OpenAlex đã deprecate concepts để chuyển sang topics)
+  Future<Map<String, dynamic>> getTopKeywords({
+    required String query,
+    int perPage = AppConstants.topKeywordsCount,
+  }) async {
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article',
+      'group_by': 'topics.id',
+      'per_page': perPage.toString(),
+    });
+    return _get(uri);
+  }
+
+  // Keyword Detail - trend theo năm, lọc thêm theo 1 keyword cụ thể
+  Future<Map<String, dynamic>> getKeywordYearlyTrend({
+    required String query,
+    required String keywordId,
+  }) async {
+    final id = keywordId.startsWith('https://')
+        ? keywordId.split('/').last
+        : keywordId;
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article,topics.id:$id',
+      'group_by': 'publication_year',
+      'per_page': '200',
+    });
+    return _get(uri);
+  }
+
+  // Keyword Detail - rank tác giả, lọc thêm theo 1 keyword cụ thể
+  Future<Map<String, dynamic>> getKeywordTopAuthors({
+    required String query,
+    required String keywordId,
+    int perPage = AppConstants.keywordAuthorsCount,
+  }) async {
+    final id = keywordId.startsWith('https://')
+        ? keywordId.split('/').last
+        : keywordId;
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article,topics.id:$id',
+      'group_by': 'authorships.author.id',
+      'per_page': perPage.toString(),
+    });
+    return _get(uri);
+  }
+
+  // Journal Detail - danh sách bài báo trong 1 journal cụ thể, lọc thêm
+  // theo topic đang search (dùng chung filter type:article,
+  // primary_location.source.id:{journalId} với search= gốc)
+  Future<Map<String, dynamic>> getWorksByJournal({
+    required String query,
+    required String journalId,
+    int perPage = AppConstants.journalWorksPerPage,
+  }) async {
+    final id = journalId.startsWith('https://')
+        ? journalId.split('/').last
+        : journalId;
+    final uri = _buildUri(AppConstants.worksEndpoint, {
+      'search': query,
+      'filter': 'type:article,primary_location.source.id:$id',
+      'sort': 'cited_by_count:desc',
+      'per_page': perPage.toString(),
+      'select': [
+        'id',
+        'title',
+        'publication_year',
+        'cited_by_count',
+        'authorships',
+        'primary_location',
+        'doi',
+      ].join(','),
     });
     return _get(uri);
   }

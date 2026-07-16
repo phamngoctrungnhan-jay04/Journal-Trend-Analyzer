@@ -22,14 +22,18 @@ class JournalSource {
 // primary_location của 1 Work — chứa thông tin nguồn đăng
 class PrimaryLocation {
   final JournalSource? source;
+  final String? landingPageUrl; // "link gốc" - trang bài báo tại nhà xuất bản
+  final String? pdfUrl;
 
-  const PrimaryLocation({this.source});
+  const PrimaryLocation({this.source, this.landingPageUrl, this.pdfUrl});
 
   factory PrimaryLocation.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const PrimaryLocation();
     final sourceJson = json['source'] as Map<String, dynamic>?;
     return PrimaryLocation(
       source: sourceJson != null ? JournalSource.fromJson(sourceJson) : null,
+      landingPageUrl: json['landing_page_url'] as String?,
+      pdfUrl: json['pdf_url'] as String?,
     );
   }
 
