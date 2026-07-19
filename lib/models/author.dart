@@ -3,10 +3,7 @@ class Author {
   final String id;
   final String displayName;
 
-  const Author({
-    required this.id,
-    required this.displayName,
-  });
+  const Author({required this.id, required this.displayName});
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
@@ -14,6 +11,8 @@ class Author {
       displayName: json['display_name'] as String? ?? 'Unknown Author',
     );
   }
+
+  Map<String, dynamic> toJson() => {'id': id, 'display_name': displayName};
 }
 
 // Đại diện cho 1 mục trong danh sách authorships của 1 Work
@@ -22,19 +21,19 @@ class Authorship {
   final Author author;
   final String? authorPosition; // "first", "middle", "last"
 
-  const Authorship({
-    required this.author,
-    this.authorPosition,
-  });
+  const Authorship({required this.author, this.authorPosition});
 
   factory Authorship.fromJson(Map<String, dynamic> json) {
     return Authorship(
-      author: Author.fromJson(
-        json['author'] as Map<String, dynamic>? ?? {},
-      ),
+      author: Author.fromJson(json['author'] as Map<String, dynamic>? ?? {}),
       authorPosition: json['author_position'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'author': author.toJson(),
+    if (authorPosition != null) 'author_position': authorPosition,
+  };
 }
 
 // Dùng cho màn hình Top Contributing Authors (FR 4.6)

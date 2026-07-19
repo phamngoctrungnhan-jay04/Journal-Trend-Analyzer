@@ -6,7 +6,9 @@ import '../utils/constants.dart';
 import '../utils/text_utils.dart';
 import 'error_widget.dart';
 
-// Bar chart số bài báo theo năm + card "năm xuất bản nhiều nhất".
+// Line chart số bài báo theo năm + card "năm xuất bản nhiều nhất". Dùng
+// đường thay vì cột: dữ liệu là chuỗi liên tục theo thời gian (mỗi năm nối
+// tiếp năm trước), line chart thể hiện xu hướng tăng/giảm rõ hơn cột rời rạc.
 // Tách từ _TrendChartTab (trend_analysis_screen.dart cũ) để dùng chung ở
 // Home và Keyword Detail.
 class YearlyTrendChart extends StatelessWidget {
@@ -21,19 +23,27 @@ class YearlyTrendChart extends StatelessWidget {
     }
 
     final maxCount = trends.map((t) => t.count).reduce((a, b) => a > b ? a : b);
+    final axis = TextUtils.niceAxis(maxCount);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.show_chart_rounded, color: AppColors.primary, size: 22),
+            const Icon(
+              Icons.show_chart_rounded,
+              color: AppColors.primary,
+              size: 22,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Xu hướng xuất bản theo năm', style: AppTextStyles.heading3),
+                  Text(
+                    'Xu hướng xuất bản theo năm',
+                    style: AppTextStyles.heading3,
+                  ),
                   Text(
                     '${trends.length} năm · ${trends.fold(0, (s, t) => s + t.count)} bài báo',
                     style: AppTextStyles.caption,
@@ -49,19 +59,22 @@ class YearlyTrendChart extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(8, 20, 20, 8),
             child: SizedBox(
               height: 280,
-              child: BarChart(
-                BarChartData(
-                  maxY: maxCount * 1.2,
-                  barTouchData: BarTouchData(
-                    touchTooltipData: BarTouchTooltipData(
+              child: LineChart(
+                LineChartData(
+                  minX: 0,
+                  maxX: (trends.length - 1).toDouble(),
+                  minY: 0,
+                  maxY: axis.maxY,
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
                       getTooltipColor: (_) => AppColors.primary,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final trend = trends[groupIndex];
-                        return BarTooltipItem(
+                      getTooltipItems: (touchedSpots) => touchedSpots.map((s) {
+                        final trend = trends[s.x.toInt()];
+                        return LineTooltipItem(
                           '${trend.year}\n${TextUtils.formatCount(trend.count)} bài',
                           const TextStyle(color: Colors.white, fontSize: 12),
                         );
-                      },
+                      }).toList(),
                     ),
                   ),
                   titlesData: FlTitlesData(
@@ -98,6 +111,7 @@ class YearlyTrendChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 44,
+                        interval: axis.interval,
                         getTitlesWidget: (value, meta) => Text(
                           TextUtils.formatCount(value.toInt()),
                           style: const TextStyle(
@@ -122,23 +136,46 @@ class YearlyTrendChart extends StatelessWidget {
                     ),
                   ),
                   borderData: FlBorderData(show: false),
-                  barGroups: trends.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final trend = entry.value;
-                    return BarChartGroupData(
-                      x: idx,
-                      barRods: [
-                        BarChartRodData(
-                          toY: trend.count.toDouble(),
-                          color: AppColors.primary,
-                          width: trends.length > 20 ? 6 : 12,
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(4),
-                          ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: trends
+                          .asMap()
+                          .entries
+                          .map(
+                            (e) => FlSpot(
+                              e.key.toDouble(),
+                              e.value.count.toDouble(),
+                            ),
+                          )
+                          .toList(),
+                      isCurved: true,
+                      color: AppColors.primary,
+                      barWidth: 3,
+                      dotData: FlDotData(
+                        // Quá nhiều năm thì chấm dày đặc, rối mắt -> chỉ
+                        // hiện chấm khi còn đủ thưa để phân biệt từng điểm.
+                        show: trends.length <= 20,
+                        getDotPainter: (spot, percent, bar, index) =>
+                            FlDotCirclePainter(
+                              radius: 4,
+                              color: AppColors.primary,
+                              strokeWidth: 2,
+                              strokeColor: Colors.white,
+                            ),
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.22),
+                            AppColors.primary.withValues(alpha: 0.0),
+                          ],
                         ),
-                      ],
-                    );
-                  }).toList(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

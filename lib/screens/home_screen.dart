@@ -1,71 +1,102 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../viewmodels/search_provider.dart';
-import '../viewmodels/analysis_provider.dart';
+import '../models/research_scope.dart';
+import '../models/keyword.dart';
+import '../models/journal.dart';
+import '../models/author.dart';
+import '../viewmodels/home_provider.dart';
 import '../utils/constants.dart';
-import '../utils/topic_actions.dart';
 import '../utils/text_utils.dart';
+import '../widgets/field_grid.dart';
+import '../widgets/taxonomy_search_field.dart';
 import '../widgets/publication_card.dart';
-import '../widgets/loading_widget.dart';
 import '../widgets/error_widget.dart';
+import '../widgets/loading_widget.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/yearly_trend_chart.dart';
+import '../widgets/ranked_bar_list.dart';
+import '../widgets/author_list_tile.dart';
 import 'publication_detail_screen.dart';
+import 'journal_detail_screen.dart';
+import 'keyword_detail_screen.dart';
+import 'author_works_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+// Home có 2 trạng thái, phạm vi RIÊNG của tab này (không liên quan
+// Journals/Keywords):
+//   A. Chưa chọn -> ô tìm kiếm + lưới 26 lĩnh vực chính (bấm để mở lĩnh vực phụ
+//      ngay tại chỗ). Ô tìm kiếm là lối tắt xuống thẳng tầng chủ đề (topic).
+//   B. Đã chọn -> thanh chip bộ lọc + 3 tab con: Tổng quan / Xu hướng / Bài báo.
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final _searchController = TextEditingController();
-  final _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    // Lắng nghe scroll để load more khi gần cuối
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      context.read<SearchProvider>().loadMore();
-    }
-  }
-
-  // Định tuyến qua action dùng chung: ghi lại chủ đề + nạp cả SearchProvider
-  // lẫn AnalysisProvider, để Journals/Keywords cũng có dữ liệu theo chủ đề này.
-  void _search(String query) {
-    selectTopic(context, query);
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(child: _buildBody()),
-        ],
+      body: Consumer<HomeProvider>(
+        builder: (context, provider, _) {
+          if (!provider.hasScope) {
+            return Column(
+              children: [
+                _Header(provider: provider),
+                Expanded(
+                  child: FieldGrid(
+                    onSubfieldSelected: (subfield, parentLabel) =>
+                        provider.load(subfield.toScope(parentLabel)),
+                  ),
+                ),
+              ],
+            );
+          }
+          return DefaultTabController(
+            length: 3,
+            child: Column(
+              children: [
+                _Header(provider: provider),
+                const Material(
+                  color: Colors.white,
+                  child: TabBar(
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textHint,
+                    indicatorColor: AppColors.primary,
+                    tabs: [
+                      Tab(text: 'Tổng quan'),
+                      Tab(text: 'Xu hướng'),
+                      Tab(text: 'Bài báo'),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _OverviewTab(provider: provider),
+                      _TrendsTab(provider: provider),
+                      _PapersTab(provider: provider),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
+}
 
-  // Header gradient bo góc dưới, thay cho AppBar + thanh search phẳng cũ.
-  Widget _buildHeader() {
+// Header gradient: luôn có ô tìm kiếm. Ở trạng thái B thêm thanh chip bộ lọc
+// thay cho breadcrumb mũi tên cũ.
+class _Header extends StatelessWidget {
+  final HomeProvider provider;
+
+  const _Header({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = provider.scope;
+
     return Container(
+      width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: AppColors.primaryGradient,
@@ -78,89 +109,21 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.insights_rounded,
-                        color: Colors.white, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppConstants.appName,
-                          style: AppTextStyles.heading2.copyWith(
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'Phân tích xu hướng nghiên cứu',
-                          style: AppTextStyles.caption.copyWith(
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              scope == null ? _buildTitle() : _buildAppTitle(),
+              const SizedBox(height: 16),
+              TaxonomySearchField(
+                keyPrefix: 'home_taxonomy',
+                hintText: 'Tìm chủ đề nghiên cứu...',
+                onSelected: provider.load,
               ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const Key('home_search_field'),
-                      controller: _searchController,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: const InputDecoration(
-                        hintText: 'Nhập chủ đề nghiên cứu...',
-                        prefixIcon: Icon(Icons.search_rounded),
-                      ),
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: _search,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    height: 52,
-                    child: ElevatedButton(
-                      key: const Key('home_search_button'),
-                      onPressed: () => _search(_searchController.text),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                      ),
-                      child: const Text('Tìm'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: AppConstants.suggestedTopics.map((topic) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _headerChip(topic),
-                    );
-                  }).toList(),
-                ),
-              ),
+              if (scope != null) ...[
+                const SizedBox(height: 14),
+                _FilterChipBar(scope: scope, onClear: provider.clear),
+              ],
             ],
           ),
         ),
@@ -168,237 +131,454 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Chip trên header gradient: nền trắng, chữ tím - tương phản rõ.
-  Widget _headerChip(String topic, {bool subtle = false}) {
-    return ActionChip(
-      label: Text(topic),
-      labelStyle: AppTextStyles.chip.copyWith(
-        color: subtle ? Colors.white : AppColors.primary,
-      ),
-      backgroundColor:
-          subtle ? Colors.white.withValues(alpha: 0.18) : Colors.white,
-      side: BorderSide.none,
-      onPressed: () {
-        _searchController.text = topic;
-        _search(topic);
-      },
-    );
-  }
-
-  Widget _buildBody() {
-    return Consumer<SearchProvider>(
-      builder: (context, provider, _) {
-        if (provider.isInitial) return _buildInitialState();
-        if (provider.isLoading) return _buildLoadingState();
-        if (provider.isError) {
-          return AppErrorWidget(
-            message: provider.errorMessage ?? 'Đã xảy ra lỗi.',
-            onRetry: () => provider.search(provider.currentQuery),
-          );
-        }
-        if (provider.works.isEmpty) {
-          return EmptyResultWidget(
-            message:
-                'Không tìm thấy bài báo nào cho\n"${provider.currentQuery}"',
-          );
-        }
-        return _buildResultsList(provider);
-      },
-    );
-  }
-
-  Widget _buildInitialState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.10),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.science_rounded,
-                size: 44,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Khám phá xu hướng nghiên cứu',
-              style: AppTextStyles.heading2,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Nhập chủ đề hoặc chọn gợi ý phía trên',
-              style: AppTextStyles.bodySecondary,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return ListView.builder(
-      itemCount: 6,
-      itemBuilder: (_, index) => const SkeletonCard(),
-    );
-  }
-
-  // itemCount = 1 header (overview: stat cards + trend chart) + danh sách
-  // publication (đã sort theo cited_by_count:desc từ OpenAlexService, nên
-  // đóng luôn vai trò "Top Papers" cũ) + 1 loading footer nếu còn trang sau.
-  Widget _buildResultsList(SearchProvider provider) {
-    return Column(
+  Widget _buildTitle() {
+    return Row(
       children: [
-        _buildResultsHeader(provider),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.insights_rounded,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 12),
         Expanded(
-          child: ListView.builder(
-            key: const Key('home_results_list'),
-            controller: _scrollController,
-            itemCount:
-                1 + provider.works.length + (provider.hasMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildOverviewSection();
-              }
-              final workIndex = index - 1;
-              if (workIndex == provider.works.length) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              final work = provider.works[workIndex];
-              return PublicationCard(
-                key: ValueKey('publication_card_$workIndex'),
-                work: work,
-                rank: workIndex + 1,
-                onTap: () {
-                  provider.logViewPublication(work);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PublicationDetailScreen(work: work),
-                    ),
-                  );
-                },
-              );
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Chọn lĩnh vực nghiên cứu',
+                style: AppTextStyles.heading2.copyWith(color: Colors.white),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                'Tìm chủ đề hoặc chọn lĩnh vực bên dưới',
+                style: AppTextStyles.caption.copyWith(
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildOverviewSection() {
-    return Consumer<AnalysisProvider>(
-      builder: (context, analysis, _) {
-        if (analysis.isLoading) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: LinearProgressIndicator(),
-          );
-        }
-        final stats = analysis.dashboardStats;
-        if (!analysis.isSuccess || stats == null) {
-          return const SizedBox.shrink();
-        }
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: StatCard(
-                      icon: Icons.article_rounded,
-                      title: 'Tổng bài báo',
-                      value: TextUtils.formatCount(stats.totalPublications),
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
-                      icon: Icons.format_quote_rounded,
-                      title: 'TB trích dẫn',
-                      value: stats.formattedAvgCitation,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: StatCard(
-                      icon: Icons.trending_up_rounded,
-                      title: 'Năm sôi động nhất',
-                      value: stats.mostActiveYear?.toString() ?? 'N/A',
-                      subtitle: stats.mostActiveYearCount != null
-                          ? '${TextUtils.formatCount(stats.mostActiveYearCount!)} bài'
-                          : null,
-                      color: const Color(0xFF43A047),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
-                      icon: Icons.library_books_rounded,
-                      title: 'Số journals',
-                      value: analysis.topJournals.length.toString(),
-                      subtitle: 'trong kết quả',
-                      color: const Color(0xFFFB8C00),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              YearlyTrendChart(trends: analysis.yearlyTrends),
-              const SizedBox(height: 8),
-              const Divider(height: 32),
-            ],
-          ),
-        );
-      },
+  // Ở trạng thái B tiêu đề rút gọn thành tên app — chi tiết phạm vi đang chọn
+  // đã chuyển sang _FilterChipBar bên dưới.
+  Widget _buildAppTitle() {
+    return Text(
+      AppConstants.appName,
+      style: AppTextStyles.heading3.copyWith(color: Colors.white),
     );
   }
+}
 
-  Widget _buildResultsHeader(SearchProvider provider) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+// Thanh chip bộ lọc: "Bộ lọc" + 1 chip cho mỗi cấp trong breadcrumb (có nút
+// ×) + "Xóa bộ lọc". MVP: bấm bất kỳ đâu trên thanh (kể cả × của riêng 1
+// chip) đều quay hẳn về lưới chọn lĩnh vực — không "lùi từng cấp" vì cần lưu
+// thêm field-id trên subfield scope mới làm được, để dành sau nếu cần.
+class _FilterChipBar extends StatelessWidget {
+  final ResearchScope scope;
+  final VoidCallback onClear;
+
+  const _FilterChipBar({required this.scope, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    final crumbs = [
+      if (scope.parentLabel != null && scope.parentLabel!.isNotEmpty)
+        ...scope.parentLabel!.split(' › '),
+      scope.label,
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          const Icon(Icons.article_rounded,
-              size: 18, color: AppColors.textSecondary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Tìm thấy ${_formatCount(provider.totalResults)} bài báo cho "${provider.currentQuery}"',
-              style: AppTextStyles.bodySecondary
-                  .copyWith(fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          ActionChip(
+            key: const Key('home_open_filter_button'),
+            avatar: const Icon(
+              Icons.tune_rounded,
+              size: 16,
+              color: AppColors.primary,
             ),
+            label: const Text('Bộ lọc'),
+            labelStyle: AppTextStyles.chip,
+            backgroundColor: Colors.white,
+            side: BorderSide.none,
+            onPressed: onClear,
+          ),
+          const SizedBox(width: 8),
+          for (final crumb in crumbs) ...[
+            Chip(
+              label: Text(crumb),
+              labelStyle: AppTextStyles.chip,
+              backgroundColor: Colors.white,
+              deleteIcon: const Icon(Icons.close_rounded, size: 16),
+              onDeleted: onClear,
+              side: BorderSide.none,
+            ),
+            const SizedBox(width: 8),
+          ],
+          TextButton(
+            key: const Key('home_clear_filter_button'),
+            onPressed: onClear,
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
+            child: const Text('Xóa bộ lọc'),
           ),
         ],
       ),
     );
   }
+}
 
-  String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return count.toString();
+// Tab 1: tiêu đề + 4 stat card + card tạp chí/tác giả nổi bật + list tác giả +
+// breakdown theo chủ đề. Top 5 tạp chí/tác giả đầy đủ nằm ở tab Xu hướng
+// (_TrendsTab) — Tổng quan chỉ cần điểm nổi bật (top 1), không lặp lại top 5.
+class _OverviewTab extends StatelessWidget {
+  final HomeProvider provider;
+
+  const _OverviewTab({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    if (provider.isLoading) {
+      return const LoadingWidget(message: 'Đang tải dữ liệu...');
+    }
+    if (provider.isError) {
+      return AppErrorWidget(
+        message: provider.errorMessage ?? 'Đã xảy ra lỗi.',
+        onRetry: provider.retry,
+      );
+    }
+
+    final scope = provider.scope!;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      children: [
+        Text(
+          'Phân tích xu hướng: "${scope.label}"',
+          style: AppTextStyles.heading2,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Tổng quan thống kê dữ liệu bài báo và trích dẫn theo phân loại '
+          'OpenAlex.',
+          style: AppTextStyles.bodySecondary,
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                compact: true,
+                icon: Icons.article_rounded,
+                title: 'Tổng tài liệu',
+                value: TextUtils.formatCount(provider.totalResults),
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                compact: true,
+                icon: Icons.format_quote_rounded,
+                title: 'Trích dẫn TB',
+                value: provider.formattedAvgCitation,
+                color: AppColors.accent,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                compact: true,
+                icon: Icons.trending_up_rounded,
+                title: 'Năm sôi nổi',
+                value: provider.peakYear?.year.toString() ?? 'N/A',
+                color: const Color(0xFF43A047),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                compact: true,
+                icon: Icons.lock_open_rounded,
+                title: 'Tỷ lệ OA',
+                value: provider.formattedOaRate,
+                subtitle: 'Truy cập mở tự do',
+                color: const Color(0xFFFB8C00),
+              ),
+            ),
+          ],
+        ),
+        if (provider.topJournals.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _highlightCard(
+            context,
+            icon: Icons.library_books_rounded,
+            color: AppColors.primary,
+            label: 'Tạp chí xuất bản nhiều nhất',
+            value: provider.topJournals.first.displayName,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => JournalDetailScreen(
+                  journal: provider.topJournals.first,
+                  scope: scope,
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (provider.topAuthors.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _highlightCard(
+            context,
+            icon: Icons.person_rounded,
+            color: AppColors.accent,
+            label: 'Tác giả đóng góp nhiều nhất',
+            value: provider.topAuthors.first.displayName,
+          ),
+          const SizedBox(height: 24),
+          Text('Top tác giả đóng góp', style: AppTextStyles.heading3),
+          const SizedBox(height: 12),
+          ...provider.topAuthors
+              .take(5)
+              .toList()
+              .asMap()
+              .entries
+              .map(
+                (e) => AuthorListTile(
+                  author: e.value,
+                  rank: e.key + 1,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AuthorWorksScreen(
+                        authorId: e.value.id,
+                        authorName: e.value.displayName,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        ],
+        if (provider.topKeywords.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          RankedBarList<Keyword>(
+            items: provider.topKeywords.take(8).toList(),
+            nameOf: (k) => k.displayName,
+            countOf: (k) => k.worksCount,
+            onTap: (k) => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => KeywordDetailScreen(keyword: k, scope: scope),
+              ),
+            ),
+            icon: Icons.donut_large_rounded,
+            title: 'Phân bố theo chủ đề',
+            subtitle: 'Các chủ đề liên quan trong ${scope.label}',
+            emptyMessage: 'Không có dữ liệu.',
+            showChart: false,
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Card nổi bật 1 dòng dùng chung cho "Tạp chí xuất bản nhiều nhất" và "Tác
+  // giả đóng góp nhiều nhất". onTap null -> không có chevron, không bấm được
+  // (chưa có màn chi tiết tác giả trong app).
+  Widget _highlightCard(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String value,
+    VoidCallback? onTap,
+  }) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(label, style: AppTextStyles.caption),
+        subtitle: Text(
+          value,
+          style: AppTextStyles.heading3,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: onTap != null
+            ? const Icon(Icons.chevron_right_rounded, color: AppColors.textHint)
+            : null,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+// Tab 2: YearlyTrendChart (line chart theo năm) + top 5 tạp chí + top 5 tác
+// giả đóng góp nhiều nhất — đặt cùng "Xu hướng" vì cả 3 đều là các góc nhìn
+// xếp hạng/biến động theo thời gian của cùng phạm vi đang chọn.
+class _TrendsTab extends StatelessWidget {
+  final HomeProvider provider;
+
+  const _TrendsTab({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    if (provider.isLoading) {
+      return const LoadingWidget(message: 'Đang tải dữ liệu...');
+    }
+    if (provider.isError) {
+      return AppErrorWidget(
+        message: provider.errorMessage ?? 'Đã xảy ra lỗi.',
+        onRetry: provider.retry,
+      );
+    }
+
+    final scope = provider.scope!;
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        YearlyTrendChart(trends: provider.yearlyTrends),
+        if (provider.topJournals.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          RankedBarList<TopJournal>(
+            items: provider.topJournals.take(5).toList(),
+            nameOf: (j) => j.displayName,
+            countOf: (j) => j.worksCount,
+            onTap: (j) => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => JournalDetailScreen(journal: j, scope: scope),
+              ),
+            ),
+            icon: Icons.library_books_rounded,
+            title: 'Top 5 tạp chí đóng góp nhiều nhất',
+            subtitle: 'Xếp hạng theo số bài báo trong ${scope.label}',
+            emptyMessage: 'Không có dữ liệu.',
+            showChart: false,
+          ),
+        ],
+        if (provider.topAuthors.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          RankedBarList<TopAuthor>(
+            items: provider.topAuthors.take(5).toList(),
+            nameOf: (a) => a.displayName,
+            countOf: (a) => a.worksCount,
+            // Chưa có màn chi tiết tác giả trong app -> không bấm được.
+            icon: Icons.person_rounded,
+            title: 'Top 5 tác giả đóng góp nhiều nhất',
+            subtitle: 'Xếp hạng theo số bài báo trong ${scope.label}',
+            emptyMessage: 'Không có dữ liệu.',
+            showChart: false,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// Tab 3: danh sách bài báo đầy đủ + cuộn vô hạn — nội dung dời từ
+// publications_screen.dart (đã xoá) vào thẳng đây, không còn push màn riêng.
+class _PapersTab extends StatefulWidget {
+  final HomeProvider provider;
+
+  const _PapersTab({required this.provider});
+
+  @override
+  State<_PapersTab> createState() => _PapersTabState();
+}
+
+class _PapersTabState extends State<_PapersTab> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
+      widget.provider.loadMore();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = widget.provider;
+
+    if (provider.works.isEmpty && provider.isError) {
+      return AppErrorWidget(
+        message: provider.errorMessage ?? 'Đã xảy ra lỗi.',
+        onRetry: provider.retry,
+      );
+    }
+    if (provider.works.isEmpty && provider.isLoading) {
+      return ListView.builder(
+        itemCount: 6,
+        itemBuilder: (_, _) => const SkeletonCard(),
+      );
+    }
+    if (provider.works.isEmpty) {
+      return const EmptyResultWidget(message: 'Không có bài báo nào.');
+    }
+
+    return ListView.builder(
+      key: const Key('publications_list'),
+      controller: _scrollController,
+      itemCount: provider.works.length + (provider.hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == provider.works.length) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final work = provider.works[index];
+        return PublicationCard(
+          key: ValueKey('publication_card_$index'),
+          work: work,
+          rank: index + 1,
+          onTap: () {
+            provider.logViewPublication(work);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PublicationDetailScreen(work: work),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

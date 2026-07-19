@@ -5,11 +5,13 @@ import '../utils/constants.dart';
 class AuthorListTile extends StatelessWidget {
   final TopAuthor author;
   final int rank;
+  final VoidCallback? onTap;
 
   const AuthorListTile({
     super.key,
     required this.author,
     required this.rank,
+    this.onTap,
   });
 
   @override
@@ -22,45 +24,57 @@ class AuthorListTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
         margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              _rankBadge(color),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      author.displayName,
-                      style:
-                          AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: barFraction,
-                        backgroundColor: color.withValues(alpha: 0.12),
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
-                        minHeight: 8,
+        child: InkWell(
+          key: ValueKey('author_tile_${author.id}'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                _rankBadge(color),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        author.displayName,
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${author.worksCount} bài báo',
-                      style: AppTextStyles.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: color,
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: barFraction,
+                          backgroundColor: color.withValues(alpha: 0.12),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                          minHeight: 8,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        '${author.worksCount} bài báo',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                if (onTap != null)
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textHint,
+                    size: 20,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

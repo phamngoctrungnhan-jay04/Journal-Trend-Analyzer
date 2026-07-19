@@ -55,6 +55,9 @@ dependencies:
   firebase_remote_config: ^6.5.5
   firebase_crashlytics: ^5.2.6
 
+  # Lưu bookmark bài báo cục bộ trên máy (key theo uid)
+  shared_preferences: ^2.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

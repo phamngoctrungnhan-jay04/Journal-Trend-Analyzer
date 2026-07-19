@@ -55,7 +55,9 @@ class DashboardStats {
       topJournal: topJournals.isNotEmpty ? topJournals.first : null,
       topAuthor: topAuthors.isNotEmpty ? topAuthors.first : null,
       topKeyword: topKeywords.isNotEmpty ? topKeywords.first : null,
-      mostInfluentialPaper: topCitedWorks.isNotEmpty ? topCitedWorks.first : null,
+      mostInfluentialPaper: topCitedWorks.isNotEmpty
+          ? topCitedWorks.first
+          : null,
     );
   }
 

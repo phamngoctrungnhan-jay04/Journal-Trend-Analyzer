@@ -37,7 +37,7 @@ class AuthService implements AuthServiceBase {
   bool _googleSignInInitialized = false;
 
   AuthService({fb_auth.FirebaseAuth? firebaseAuth})
-      : _firebaseAuth = firebaseAuth ?? fb_auth.FirebaseAuth.instance;
+    : _firebaseAuth = firebaseAuth ?? fb_auth.FirebaseAuth.instance;
 
   @override
   Stream<UserProfile?> get authStateChanges => _firebaseAuth
@@ -63,8 +63,9 @@ class AuthService implements AuthServiceBase {
         throw const AuthException('Không lấy được ID token từ Google.');
       }
 
-      final credential =
-          fb_auth.GoogleAuthProvider.credential(idToken: idToken);
+      final credential = fb_auth.GoogleAuthProvider.credential(
+        idToken: idToken,
+      );
       await _firebaseAuth.signInWithCredential(credential);
       return true;
     } on GoogleSignInException catch (e) {

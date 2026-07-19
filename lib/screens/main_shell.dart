@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/bookmark_provider.dart';
 import 'home_screen.dart';
 import 'journals_screen.dart';
 import 'keywords_screen.dart';
@@ -25,12 +28,25 @@ class _MainShellState extends State<MainShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // MainShell chỉ hiện sau khi _AuthGate xác nhận đã đăng nhập -> uid luôn
+    // có sẵn ở đây. Nạp bookmark 1 lần khi vào app để icon bookmark ở mọi
+    // màn (chi tiết bài báo, Profile) phản ánh đúng ngay từ đầu.
+    final uid = context.read<AuthViewModel>().userProfile?.uid;
+    if (uid != null) {
+      context.read<BookmarkProvider>().loadForUser(uid);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _tabs),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
         destinations: const [
           NavigationDestination(
             key: Key('nav_home'),

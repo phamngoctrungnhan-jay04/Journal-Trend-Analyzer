@@ -4,7 +4,7 @@ class NotificationService {
   final FirebaseMessaging _messaging;
 
   NotificationService({FirebaseMessaging? messaging})
-      : _messaging = messaging ?? FirebaseMessaging.instance;
+    : _messaging = messaging ?? FirebaseMessaging.instance;
 
   Future<void> requestPermission() => _messaging.requestPermission();
 

@@ -13,7 +13,7 @@ class NotificationViewModel extends ChangeNotifier {
   late final StreamSubscription<RemoteMessage> _messageSubscription;
 
   NotificationViewModel({NotificationService? service})
-      : _service = service ?? NotificationService() {
+    : _service = service ?? NotificationService() {
     _messageSubscription = _service.onMessage.listen(_onMessage);
     unawaited(_init());
   }

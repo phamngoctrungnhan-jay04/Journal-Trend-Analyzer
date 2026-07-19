@@ -16,10 +16,11 @@ class AuthViewModel extends ChangeNotifier {
   // patrol_tests/) để bỏ qua màn hình chọn tài khoản Google thật khi chạy
   // E2E test - không thể automate UI ngoài app của Google Sign-In.
   AuthViewModel({AuthServiceBase? authService, AnalyticsService? analytics})
-      : _authService = authService ?? AuthService(),
-        _analytics = analytics ?? AnalyticsService() {
-    _authSubscription =
-        _authService.authStateChanges.listen(_onAuthStateChanged);
+    : _authService = authService ?? AuthService(),
+      _analytics = analytics ?? AnalyticsService() {
+    _authSubscription = _authService.authStateChanges.listen(
+      _onAuthStateChanged,
+    );
   }
 
   // Bắt đầu ở loading để chờ Firebase Auth khôi phục phiên đăng nhập cũ
@@ -40,8 +41,9 @@ class AuthViewModel extends ChangeNotifier {
 
   void _onAuthStateChanged(UserProfile? profile) {
     _userProfile = profile;
-    _state =
-        profile != null ? AuthState.authenticated : AuthState.unauthenticated;
+    _state = profile != null
+        ? AuthState.authenticated
+        : AuthState.unauthenticated;
     notifyListeners();
   }
 

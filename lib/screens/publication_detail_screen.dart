@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/work.dart';
+import '../viewmodels/bookmark_provider.dart';
 import '../utils/constants.dart';
 import '../utils/text_utils.dart';
 
@@ -10,12 +12,37 @@ class PublicationDetailScreen extends StatelessWidget {
 
   const PublicationDetailScreen({super.key, required this.work});
 
+  void _toggleBookmark(BuildContext context) {
+    final bookmarks = context.read<BookmarkProvider>();
+    final wasBookmarked = bookmarks.isBookmarked(work.id);
+    bookmarks.toggle(work);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(wasBookmarked ? 'Đã bỏ lưu bài báo' : 'Đã lưu bài báo'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isBookmarked = context.watch<BookmarkProvider>().isBookmarked(
+      work.id,
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chi tiết bài báo'),
         actions: [
+          IconButton(
+            key: const Key('bookmark_toggle_button'),
+            icon: Icon(
+              isBookmarked
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+            ),
+            tooltip: isBookmarked ? 'Bỏ lưu' : 'Lưu bài báo',
+            onPressed: () => _toggleBookmark(context),
+          ),
           if (work.landingPageUrl != null)
             IconButton(
               icon: const Icon(Icons.open_in_new_rounded),
@@ -63,7 +90,10 @@ class PublicationDetailScreen extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -196,7 +226,8 @@ class PublicationDetailScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 14,
-                      backgroundColor: AppColors.chartColors[i % AppColors.chartColors.length]
+                      backgroundColor: AppColors
+                          .chartColors[i % AppColors.chartColors.length]
                           .withValues(alpha: 0.15),
                       child: Text(
                         authorship.author.displayName.isNotEmpty
@@ -205,7 +236,8 @@ class PublicationDetailScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.chartColors[i % AppColors.chartColors.length],
+                          color: AppColors
+                              .chartColors[i % AppColors.chartColors.length],
                         ),
                       ),
                     ),
@@ -239,7 +271,11 @@ class PublicationDetailScreen extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -286,7 +322,10 @@ class PublicationDetailScreen extends StatelessWidget {
   Widget _buildOriginalLinkCard(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: const Icon(Icons.open_in_new_rounded, color: AppColors.primary),
+        leading: const Icon(
+          Icons.open_in_new_rounded,
+          color: AppColors.primary,
+        ),
         title: const Text('Bài báo gốc'),
         subtitle: Text(
           work.landingPageUrl!,
@@ -316,12 +355,13 @@ class PublicationDetailScreen extends StatelessWidget {
 
   Future<void> _openLink(BuildContext context, String url) async {
     final uri = Uri.tryParse(url);
-    final opened = uri != null &&
+    final opened =
+        uri != null &&
         await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể mở liên kết.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Không thể mở liên kết.')));
     }
   }
 }
