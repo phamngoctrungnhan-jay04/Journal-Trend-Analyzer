@@ -5,11 +5,7 @@ class AppErrorWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
 
-  const AppErrorWidget({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const AppErrorWidget({super.key, required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -68,11 +64,7 @@ class EmptyResultWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.search_off_rounded,
-              size: 64,
-              color: AppColors.textHint,
-            ),
+            Icon(Icons.search_off_rounded, size: 64, color: AppColors.textHint),
             const SizedBox(height: 16),
             Text(
               message,

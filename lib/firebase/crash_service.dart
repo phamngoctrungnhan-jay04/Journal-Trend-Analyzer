@@ -5,7 +5,7 @@ class CrashService {
   final FirebaseCrashlytics _crashlytics;
 
   CrashService({FirebaseCrashlytics? crashlytics})
-      : _crashlytics = crashlytics ?? FirebaseCrashlytics.instance;
+    : _crashlytics = crashlytics ?? FirebaseCrashlytics.instance;
 
   void setupErrorHandlers() {
     FlutterError.onError = _crashlytics.recordFlutterFatalError;

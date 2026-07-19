@@ -32,10 +32,14 @@ class Work {
         .map((a) => Authorship.fromJson(a))
         .toList();
 
-    // Parse abstract từ inverted index (nếu có)
+    // Parse abstract từ inverted index (nếu có). Bookmark lưu lại bằng
+    // toJson() KHÔNG có inverted index gốc (đã decode 1 lần) mà ghi thẳng
+    // 'abstract_text' -> fallback đọc field đó khi đọc lại từ bookmark.
     final invertedIndex =
         json['abstract_inverted_index'] as Map<String, dynamic>?;
-    final abstractText = TextUtils.decodeAbstract(invertedIndex);
+    final abstractText =
+        TextUtils.decodeAbstract(invertedIndex) ??
+        json['abstract_text'] as String?;
 
     return Work(
       id: json['id'] as String? ?? '',
@@ -74,6 +78,20 @@ class Work {
   // "Link gốc" - trang bài báo tại nhà xuất bản (khác DOI resolver ở nhiều
   // trường hợp). Fallback sang doiUrl nếu OpenAlex không trả landing_page_url.
   String? get landingPageUrl => primaryLocation.landingPageUrl ?? doiUrl;
+
+  // Dùng để lưu bookmark cục bộ — phát ra đúng tên field OpenAlex nên
+  // Work.fromJson(work.toJson()) round-trip lại được, tái dùng nguyên parser
+  // ở trên thay vì viết thêm 1 bộ parse riêng cho dữ liệu đã lưu.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    if (publicationYear != null) 'publication_year': publicationYear,
+    'cited_by_count': citedByCount,
+    'authorships': authorships.map((a) => a.toJson()).toList(),
+    'primary_location': primaryLocation.toJson(),
+    if (doi != null) 'doi': doi,
+    if (abstractText != null) 'abstract_text': abstractText,
+  };
 }
 
 // Dùng cho FR 4.3 - Trend by Year

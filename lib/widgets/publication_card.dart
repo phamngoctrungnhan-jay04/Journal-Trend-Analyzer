@@ -8,12 +8,7 @@ class PublicationCard extends StatelessWidget {
   final VoidCallback? onTap;
   final int? rank; // hiển thị số thứ tự (dùng ở Top Papers)
 
-  const PublicationCard({
-    super.key,
-    required this.work,
-    this.onTap,
-    this.rank,
-  });
+  const PublicationCard({super.key, required this.work, this.onTap, this.rank});
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +36,7 @@ class PublicationCard extends StatelessWidget {
       width: 36,
       height: 36,
       margin: const EdgeInsets.only(right: 12, top: 2),
-      decoration: BoxDecoration(
-        color: _getRankColor(),
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: _getRankColor(), shape: BoxShape.circle),
       child: Center(
         child: Text(
           '#$rank',
@@ -102,9 +94,7 @@ class PublicationCard extends StatelessWidget {
               color: AppColors.accent,
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: _buildJournalChip(),
-            ),
+            Expanded(child: _buildJournalChip()),
           ],
         ),
       ],
@@ -150,7 +140,11 @@ class PublicationCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.book_rounded, size: 12, color: AppColors.textSecondary),
+          const Icon(
+            Icons.book_rounded,
+            size: 12,
+            color: AppColors.textSecondary,
+          ),
           const SizedBox(width: 4),
           Flexible(
             child: Text(

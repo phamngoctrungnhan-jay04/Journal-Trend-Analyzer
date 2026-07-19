@@ -3,12 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/analysis_provider.dart';
 import '../viewmodels/export_viewmodel.dart';
 import '../viewmodels/notification_viewmodel.dart';
+import '../viewmodels/bookmark_provider.dart';
+import '../viewmodels/remote_config_provider.dart';
 import '../models/app_notification.dart';
+import '../models/work.dart';
 import '../firebase/crash_service.dart';
 import '../utils/constants.dart';
+import '../widgets/taxonomy_search_field.dart';
+import 'publication_detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,23 +32,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _export() {
-    final analysis = context.read<AnalysisProvider>();
-    final stats = analysis.dashboardStats;
-    if (stats == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Hãy tìm kiếm một chủ đề ở tab Home trước.'),
-        ),
-      );
-      return;
-    }
-    _exportViewModel.exportReport(
-      stats: stats,
-      yearlyTrends: analysis.yearlyTrends,
-      topJournals: analysis.topJournals,
-      topAuthors: analysis.topAuthors,
-      topKeywords: analysis.topKeywords,
-    );
+    if (!_exportViewModel.hasScope) return;
+    _exportViewModel.exportReport();
   }
 
   Future<void> _triggerHandledException() async {
@@ -86,9 +75,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _copyText(String text, String confirmMessage) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(confirmMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(confirmMessage)));
   }
 
   @override
@@ -99,14 +88,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = auth.userProfile;
           return Column(
             children: [
-              _buildProfileHeader(user?.displayName, user?.email, user?.photoUrl),
+              _buildProfileHeader(
+                user?.displayName,
+                user?.email,
+                user?.photoUrl,
+              ),
               Expanded(
                 child: ListView(
+                  key: const Key('profile_list'),
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                   children: [
+                    _buildBookmarksCard(),
+                    const SizedBox(height: 14),
                     _buildExportCard(),
                     const SizedBox(height: 14),
                     _buildNotificationCard(),
+                    const SizedBox(height: 14),
+                    _buildDisplaySettingsCard(),
                     const SizedBox(height: 14),
                     _buildDebugCard(),
                     const SizedBox(height: 14),
@@ -160,8 +158,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: CircleAvatar(
                   radius: 42,
                   backgroundColor: Colors.white.withValues(alpha: 0.22),
-                  backgroundImage:
-                      (photoUrl != null) ? NetworkImage(photoUrl) : null,
+                  backgroundImage: (photoUrl != null)
+                      ? NetworkImage(photoUrl)
+                      : null,
                   child: photoUrl == null
                       ? Text(
                           (name?.isNotEmpty ?? false)
@@ -197,7 +196,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Header nhất quán cho các card: icon trong ô bo tròn màu + tiêu đề.
-  Widget _cardHeader(IconData icon, String title, {Color color = AppColors.primary}) {
+  Widget _cardHeader(
+    IconData icon,
+    String title, {
+    Color color = AppColors.primary,
+  }) {
     return Row(
       children: [
         Container(
@@ -225,14 +228,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppColors.error.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+          child: const Icon(
+            Icons.logout_rounded,
+            color: AppColors.error,
+            size: 20,
+          ),
         ),
         title: Text(
           'Đăng xuất',
           style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: AppColors.textHint,
+        ),
         onTap: () => context.read<AuthViewModel>().signOut(),
+      ),
+    );
+  }
+
+  Widget _buildBookmarksCard() {
+    return Consumer<BookmarkProvider>(
+      builder: (context, bookmarks, _) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _cardHeader(Icons.bookmark_rounded, 'Bài báo đã lưu'),
+                const SizedBox(height: 12),
+                if (bookmarks.bookmarks.isEmpty)
+                  Text(
+                    'Chưa lưu bài báo nào. Mở 1 bài báo và bấm dấu bookmark để lưu.',
+                    style: AppTextStyles.bodySecondary,
+                  )
+                else
+                  ...bookmarks.bookmarks.map(
+                    (work) => _buildBookmarkTile(context, work),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBookmarkTile(BuildContext context, Work work) {
+    return Padding(
+      key: ValueKey('bookmark_tile_${work.id}'),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PublicationDetailScreen(work: work),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      work.title,
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      work.firstAuthorName,
+                      style: AppTextStyles.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                key: ValueKey('bookmark_remove_${work.id}'),
+                icon: const Icon(
+                  Icons.bookmark_rounded,
+                  color: AppColors.primary,
+                ),
+                onPressed: () =>
+                    context.read<BookmarkProvider>().remove(work.id),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -249,6 +341,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _cardHeader(Icons.picture_as_pdf_rounded, 'Xuất báo cáo'),
+                const SizedBox(height: 6),
+                Text(
+                  'Chọn chủ đề muốn xuất báo cáo:',
+                  style: AppTextStyles.caption,
+                ),
+                const SizedBox(height: 10),
+                // Ô chọn phạm vi riêng cho việc xuất — không phụ thuộc tab nào.
+                TaxonomySearchField(
+                  hintText: 'Tìm chủ đề để xuất...',
+                  onSelected: vm.selectScope,
+                ),
+                if (vm.hasScope) ...[
+                  const SizedBox(height: 12),
+                  _buildSelectedScope(vm),
+                ],
                 const SizedBox(height: 14),
                 if (vm.isLoading)
                   const Center(child: CircularProgressIndicator())
@@ -290,7 +397,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ElevatedButton.icon(
                     key: const Key('export_pdf_button'),
-                    onPressed: _export,
+                    // Khoá khi chưa chọn chủ đề — không còn gì để xuất.
+                    onPressed: vm.hasScope ? _export : null,
                     icon: const Icon(Icons.file_download_rounded),
                     label: const Text('Xuất báo cáo PDF'),
                   ),
@@ -303,10 +411,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Chip hiển thị chủ đề đang chọn để xuất, kèm breadcrumb nhánh cha.
+  Widget _buildSelectedScope(ExportViewModel vm) {
+    final scope = vm.scope!;
+    return Container(
+      key: const Key('export_selected_scope'),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.topic_rounded, size: 18, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  scope.label,
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (scope.parentLabel != null && scope.parentLabel!.isNotEmpty)
+                  Text(
+                    scope.parentLabel!,
+                    style: AppTextStyles.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNotificationCard() {
     return Consumer<NotificationViewModel>(
       builder: (context, vm, _) {
         return Card(
+          key: const Key('notification_card'),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -371,9 +521,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           if (notification.body.isNotEmpty)
             Text(notification.body, style: AppTextStyles.bodySecondary),
-          Text(_formatTime(notification.receivedAt), style: AppTextStyles.caption),
+          Text(
+            _formatTime(notification.receivedAt),
+            style: AppTextStyles.caption,
+          ),
         ],
       ),
+    );
+  }
+
+  // Cho phép chỉnh max_papers_displayed NGAY trong app (override cục bộ trên
+  // máy, lưu qua SharedPreferences trong RemoteConfigProvider) — không cần
+  // vào Firebase Console. Override luôn thắng giá trị fetch từ Remote
+  // Config; "Khôi phục mặc định" xoá override, quay lại giá trị Remote
+  // Config thật.
+  Widget _buildDisplaySettingsCard() {
+    return Consumer<RemoteConfigProvider>(
+      builder: (context, config, _) {
+        final value = config.maxPapersDisplayed;
+        return Card(
+          key: const Key('display_settings_card'),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _cardHeader(Icons.tune_rounded, 'Cài đặt hiển thị'),
+                const SizedBox(height: 10),
+                Text(
+                  'Số bài báo hiển thị tối đa: $value',
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Áp dụng cho danh sách bài nổi bật của journal, volume, '
+                  'tác giả và từ khoá liên quan.',
+                  style: AppTextStyles.caption,
+                ),
+                Slider(
+                  key: const Key('max_papers_slider'),
+                  value: value.toDouble().clamp(5, 50),
+                  min: 5,
+                  max: 50,
+                  divisions: 9,
+                  label: '$value',
+                  onChanged: (v) => context
+                      .read<RemoteConfigProvider>()
+                      .setMaxPapersDisplayedOverride(v.round()),
+                ),
+                if (config.hasMaxPapersOverride)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      key: const Key('reset_max_papers_button'),
+                      onPressed: () => context
+                          .read<RemoteConfigProvider>()
+                          .resetMaxPapersDisplayedOverride(),
+                      child: const Text('Khôi phục mặc định'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -384,7 +596,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _cardHeader(Icons.bug_report_rounded, 'Công cụ debug (Crashlytics)'),
+            _cardHeader(
+              Icons.bug_report_rounded,
+              'Công cụ debug (Crashlytics)',
+            ),
             const SizedBox(height: 14),
             OutlinedButton(
               onPressed: _triggerHandledException,

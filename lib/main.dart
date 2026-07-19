@@ -5,21 +5,21 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'firebase/crash_service.dart';
-import 'viewmodels/topic_provider.dart';
-import 'viewmodels/search_provider.dart';
-import 'viewmodels/analysis_provider.dart';
+import 'viewmodels/taxonomy_provider.dart';
+import 'viewmodels/home_provider.dart';
+import 'viewmodels/journals_provider.dart';
+import 'viewmodels/keywords_provider.dart';
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
 import 'viewmodels/remote_config_provider.dart';
+import 'viewmodels/bookmark_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/login_screen.dart';
 import 'utils/constants.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   CrashService().setupErrorHandlers();
   runApp(const JournalTrendApp());
 }
@@ -37,11 +37,15 @@ class JournalTrendApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => authViewModel ?? AuthViewModel()),
-        ChangeNotifierProvider(create: (_) => TopicProvider()),
-        ChangeNotifierProvider(create: (_) => SearchProvider()),
-        ChangeNotifierProvider(create: (_) => AnalysisProvider()),
+        // Mỗi tab một phạm vi riêng, độc lập nhau (không có scope chung).
+        ChangeNotifierProvider(create: (_) => HomeProvider()),
+        ChangeNotifierProvider(create: (_) => JournalsProvider()),
+        ChangeNotifierProvider(create: (_) => KeywordsProvider()),
+        // Cache lĩnh vực phụ cho lưới ở Home.
+        ChangeNotifierProvider(create: (_) => TaxonomyProvider()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
         ChangeNotifierProvider(create: (_) => RemoteConfigProvider()),
+        ChangeNotifierProvider(create: (_) => BookmarkProvider()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
@@ -53,14 +57,15 @@ class JournalTrendApp extends StatelessWidget {
   }
 
   ThemeData _buildTheme() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: AppColors.primary,
-      secondary: AppColors.accent,
-      surface: AppColors.surface,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.primary,
+          secondary: AppColors.accent,
+          surface: AppColors.surface,
+        );
     final base = ThemeData(useMaterial3: true, colorScheme: colorScheme);
 
     return base.copyWith(

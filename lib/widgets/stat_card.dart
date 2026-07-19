@@ -8,6 +8,10 @@ class StatCard extends StatelessWidget {
   final String? subtitle;
   final IconData icon;
   final Color color;
+  // Bản gọn hơn cho những màn hiện nhiều card cùng lúc (vd 4 card thống kê
+  // journal) — cùng bố cục/màu sắc, chỉ giảm padding/font. Mặc định false để
+  // không đổi các chỗ đang dùng StatCard cỡ thường (Home...).
+  final bool compact;
 
   const StatCard({
     super.key,
@@ -16,12 +20,13 @@ class StatCard extends StatelessWidget {
     this.subtitle,
     required this.icon,
     this.color = AppColors.primary,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(compact ? 10 : 16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -31,24 +36,30 @@ class StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(compact ? 6 : 10),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(compact ? 10 : 14),
             ),
-            child: Icon(icon, size: 22, color: color),
+            child: Icon(icon, size: compact ? 16 : 22, color: color),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: compact ? 8 : 14),
           Text(
             value,
-            style: AppTextStyles.heading1.copyWith(color: color, fontSize: 24),
+            style: AppTextStyles.heading1.copyWith(
+              color: color,
+              fontSize: compact ? 17 : 24,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
             title,
-            style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600),
+            style: AppTextStyles.caption.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: compact ? 10.5 : null,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

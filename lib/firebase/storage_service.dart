@@ -5,7 +5,7 @@ class StorageService {
   final FirebaseStorage _storage;
 
   StorageService({FirebaseStorage? storage})
-      : _storage = storage ?? FirebaseStorage.instance;
+    : _storage = storage ?? FirebaseStorage.instance;
 
   // Upload thẳng từ bytes trong bộ nhớ - không cần path_provider/ghi file
   // tạm ra đĩa. Có timeout ở mỗi bước mạng để tác vụ export không bao giờ

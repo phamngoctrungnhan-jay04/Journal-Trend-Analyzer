@@ -1,5 +1,35 @@
+import 'dart:math' as math;
+
 class TextUtils {
   TextUtils._();
+
+  // Chọn interval "đẹp" (1/2/5 × 10^n, ~4 vạch chia) rồi làm tròn maxY LÊN
+  // đúng bội số của interval đó. Lý do: fl_chart tự chèn thêm 1 nhãn NGAY TẠI
+  // maxY nếu maxY không trùng đúng 1 mốc chia đều (xem
+  // AxisChartHelper.iterateThroughAxis trong fl_chart) — với maxY thô kiểu
+  // maxCount*1.2 (số lẻ, vd 83K), nhãn thừa đó luôn đứng sát nhãn mốc cuối
+  // (vd 80K), chồng chữ lên nhau. Ép maxY khớp đúng bội interval loại bỏ hẳn
+  // nhãn thừa này. Dùng chung cho mọi chart trục Y (bar chart, line chart).
+  static ({double maxY, double interval}) niceAxis(num maxCount) {
+    if (maxCount <= 0) return (maxY: 1, interval: 1);
+
+    final target = maxCount * 1.2;
+    final roughInterval = target / 4;
+    final magnitude = math
+        .pow(10, (math.log(roughInterval) / math.ln10).floor())
+        .toDouble();
+    final residual = roughInterval / magnitude;
+    final niceResidual = residual <= 1
+        ? 1.0
+        : residual <= 2
+        ? 2.0
+        : residual <= 5
+        ? 5.0
+        : 10.0;
+    final interval = niceResidual * magnitude;
+    final maxY = interval * (target / interval).ceil();
+    return (maxY: maxY, interval: interval);
+  }
 
   // OpenAlex trả abstract dạng inverted index: {"word": [pos1, pos2], ...}
   // Hàm này tái tạo lại thành chuỗi text bình thường

@@ -4,42 +4,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'common/pump_app.dart';
 
 void main() {
-  appTest('TC6 - Xem danh sách Top từ khoá nghiên cứu', ($) async {
+  appTest('TC6 - Phân tích từ khoá hiển thị thống kê + danh sách', ($) async {
     await pumpAuthenticatedApp($);
-    await searchTopic($);
 
     await $(const Key('nav_keywords')).tap();
+    await analyzeKeyword($);
 
-    await $('Top từ khoá nghiên cứu').waitUntilVisible(timeout: searchTimeout);
-    await scrollToKey($, const Key('ranked_item_1'));
-    expect($(const Key('ranked_item_1')), findsOneWidget);
+    // Thống kê tổng quan (mốc "đã phân tích xong") + danh sách từ khóa liên
+    // quan (thay cho "Top từ khoá nghiên cứu" của luồng theo-lĩnh-vực cũ).
+    await $('Tổng số bài báo').waitUntilVisible(timeout: searchTimeout);
+    expect($('Tổng số bài báo'), findsOneWidget);
+    expect($('Trending Keywords'), findsOneWidget);
   });
 
-  appTest('TC7 - Xem chi tiết 1 keyword (trend + top tác giả)', ($) async {
-    await pumpAuthenticatedApp($);
-    await searchTopic($);
-
-    await $(const Key('nav_keywords')).tap();
-    await $('Top từ khoá nghiên cứu').waitUntilVisible(timeout: searchTimeout);
-    await scrollToKey($, const Key('ranked_item_1'));
-    await $(const Key('ranked_item_1')).tap();
-
-    await $('Top tác giả đóng góp nhiều nhất')
-        .waitUntilVisible(timeout: searchTimeout);
-    expect($('Top tác giả đóng góp nhiều nhất'), findsOneWidget);
-  });
-
-  // Chứng minh đã bỏ ràng buộc "phải search ở Home trước": vào thẳng tab
-  // Keywords, dùng ô search RIÊNG của tab này, dữ liệu vẫn nạp bình thường.
-  appTest('TC12 - Tìm chủ đề trực tiếp ở tab Keywords (không qua Home)', ($) async {
+  appTest('TC7 - Xem chi tiết 1 từ khoá liên quan (bài báo chứa từ khoá đó)', (
+    $,
+  ) async {
     await pumpAuthenticatedApp($);
 
     await $(const Key('nav_keywords')).tap();
-    await $(const Key('keywords_search_field')).enterText('Machine Learning');
-    await $(const Key('keywords_search_button')).tap();
+    await analyzeKeyword($);
 
-    await $('Top từ khoá nghiên cứu').waitUntilVisible(timeout: searchTimeout);
-    await scrollToKey($, const Key('ranked_item_1'));
-    expect($(const Key('ranked_item_1')), findsOneWidget);
+    await waitFirstWithKeyPrefix($, 'trending_keyword_');
+    await tapFirstWithKeyPrefix($, 'trending_keyword_');
+
+    // KeywordWorksScreen: danh sách bài báo chứa đúng từ khoá vừa bấm.
+    await $(
+      const Key('keyword_publication_card_0'),
+    ).waitUntilVisible(timeout: searchTimeout);
+    expect($(const Key('keyword_publication_card_0')), findsOneWidget);
   });
 }

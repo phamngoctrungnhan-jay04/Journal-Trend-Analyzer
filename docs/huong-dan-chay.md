@@ -161,38 +161,102 @@ LoginScreen  ──(đăng nhập Google)──►  MainShell (Bottom Nav 4 tab)
         ┌──────────────┬─────────────────┼──────────────┐
         ▼              ▼                  ▼              ▼
      Home           Journals          Keywords        Profile
-  (hub chọn        (xếp hạng         (ô search        (avatar,
-   chủ đề +         tạp chí)          RIÊNG +          export PDF,
-   overview +                        xếp hạng          notifications,
-   danh sách        │                từ khoá)          logout)
-   bài báo)         │                    │
-     │              ▼                    ▼
-     │        JournalDetail        KeywordDetail
-     │        (bài báo trong       (trend theo năm +
-     │         tạp chí)             top tác giả)
-     ▼              │
-PublicationDetail ◄─┘
-(meta, tác giả, tóm tắt, link gốc, DOI)
+  (search +        (search RIÊNG    (search RIÊNG    (avatar,
+   lưới 26 lĩnh     + xếp hạng       + xếp hạng       export PDF
+   vực → phụ)       tạp chí)         từ khoá)         theo chủ đề
+     │              │                  │              tự chọn,
+     │ chọn xong    │                  │              notifications,
+     ▼              ▼                  ▼              logout)
+  Overview     JournalDetail      KeywordDetail
+  (2 chỉ số +  (bài báo trong     (trend theo năm +
+   biểu đồ +    tạp chí)           top tác giả)
+   5 bài)         │
+     │            │        ↑ mỗi tab một phạm vi RIÊNG, độc lập
+     ▼            │
+ Publications     │
+ (list đầy đủ,    │
+  cuộn vô hạn)    │
+     │            │
+     ▼            ▼
+   PublicationDetail
+   (meta, tác giả, tóm tắt, link gốc, DOI)
 ```
 
-### Nguyên tắc điều hướng chủ đề (quan trọng)
-- Có **một "chủ đề đang phân tích" chung** ở cấp app (`TopicProvider`).
-- Chọn chủ đề qua action dùng chung `selectTopic()` (ở [lib/utils/topic_actions.dart](../lib/utils/topic_actions.dart)):
-  gọi một lần → nạp `SearchProvider` (danh sách bài báo) **và** `AnalysisProvider`
-  (overview/Journals/Keywords). Nhờ vậy **mọi tab đều có dữ liệu bất kể bạn bấm
-  Tìm từ tab nào** — bỏ ràng buộc "phải search ở Home trước".
-- **Home**: hub chọn chủ đề (ô search + chip gợi ý) + overview (thống kê + biểu đồ
-  xu hướng) + danh sách bài báo.
-- **Keywords**: có **ô search riêng** — tìm chủ đề ngay tại tab này.
-- **Journals**: view thụ động theo chủ đề đang chọn (không có ô search).
-- **Profile**: hồ sơ + Xuất báo cáo PDF (Storage) + Trung tâm thông báo (FCM) +
-  công cụ debug Crashlytics + Đăng xuất.
+### Nguyên tắc điều hướng theo lĩnh vực (quan trọng)
+
+App dùng **cây phân loại có sẵn của OpenAlex** thay vì bắt user tự nghĩ từ khoá.
+Đây là bộ **đầy đủ**, không phải danh sách gợi ý — 98,3% bài báo được phân loại:
+
+| Tầng | Số lượng | Hiển thị ở |
+|---|---|---|
+| Field (lĩnh vực chính) | 26 | Home — lưới card, viết cứng trong `constants.dart` |
+| Subfield (lĩnh vực phụ) | 252 | Home — expand tại chỗ, nạp từ API khi bấm |
+| Topic (chủ đề hẹp) | 4.516 | Ô tìm kiếm ở cả 3 tab (`/topics`) + tab Keywords |
+
+**Mỗi tab một phạm vi RIÊNG, độc lập nhau.** Home, Journals, Keywords mỗi tab
+giữ [`ResearchScope`](../lib/models/research_scope.dart) của mình (`HomeProvider`
+/ `JournalsProvider` / `KeywordsProvider`) — chọn lĩnh vực ở tab này **không**
+đổi tab kia. Bạn có thể xem Home ở "Software", Journals ở "Deep Learning",
+Keywords ở "Blockchain" cùng lúc.
+
+- **Ô tìm kiếm tìm trong CÂY PHÂN LOẠI, không search full-text bài báo.** Gõ
+  "blockchain" → [`TaxonomySearchField`](../lib/widgets/taxonomy_search_field.dart)
+  gọi `/topics?display_name.search=` → gợi ý các topic kèm breadcrumb nhánh cha
+  và số bài. Chọn xong vẫn lọc bằng `filter=primary_topic.id:<id>`.
+  - Vì sao không search text thẳng: `search=blockchain` quét full-text toàn
+    OpenAlex ra **246.708** bài (gồm bài chỉ nhắc thoáng qua); chọn đúng topic
+    rồi `primary_topic.id:T10270` ra **51.340** bài thực sự về blockchain. Tìm
+    trong "bản đồ" thay vì "thế giới" giữ số liệu đúng phạm vi.
+  - Có debounce 350ms + tối thiểu 3 ký tự để không cạn quota OpenAlex.
+- **Mọi** truy vấn dùng `filter=primary_topic.*` chứ **không bao giờ** `search=`
+  → số liệu luôn của riêng phạm vi đó. (Đối chiếu: subfield *Software* = **81.212**
+  bài `type:article`.)
+- **Home**: ô tìm kiếm + lưới 26 lĩnh vực chính → bấm để xổ lĩnh vực phụ → chọn
+  xong hiện **thanh chip bộ lọc** (`Bộ lọc` + chip từng cấp có nút `×` + `Xóa
+  bộ lọc`, bấm đâu cũng quay về lưới) + **3 tab con**:
+  - **Tổng quan** — 4 stat card (Tổng tài liệu, Trích dẫn TB, Năm sôi nổi, Tỷ lệ
+    OA), card "Tạp chí xuất bản nhiều nhất" (bấm vào mở `JournalDetailScreen`),
+    card + list "Tác giả đóng góp nhiều nhất" (không bấm được — chưa có màn chi
+    tiết tác giả), "Phân bố theo chủ đề" (bấm vào mở `KeywordDetailScreen`).
+  - **Xu hướng** — biểu đồ xu hướng theo năm (`YearlyTrendChart`).
+  - **Bài báo** — danh sách đầy đủ, cuộn vô hạn (không còn nút "Xem tất cả"
+    hay màn `PublicationsScreen` riêng — đã gộp thẳng vào tab).
+
+  Gọi **6 API song song/lần chọn** (getWorks, getPublicationsByYear,
+  getTopJournals, getTopAuthors, getTopKeywords, getOpenAccessBreakdown) — đánh
+  đổi có chủ đích cho nhiều thông tin hơn, cao hơn con số 2 API của bản trước.
+- **Journals**: ô tìm kiếm riêng → xếp hạng tạp chí của chủ đề đang chọn.
+- **Keywords**: ô tìm kiếm riêng → xếp hạng từ khoá (topic con) của chủ đề đang
+  chọn.
+- **Profile**: hồ sơ + **Xuất báo cáo PDF cho chủ đề tự chọn** (ô tìm kiếm riêng
+  ở thẻ export; `ExportViewModel` tự gọi 5 API gom dữ liệu khi bấm Xuất) + Trung
+  tâm thông báo (FCM) + công cụ debug Crashlytics + Đăng xuất.
 
 Chi tiết từng luồng nghiệp vụ (từ Lab 02): xem [docs/flows](./flows).
 
 ---
 
 ## 4. Chạy kiểm thử tự động (Patrol E2E)
+
+> ⚠️ **Bộ test đang LỖI THỜI so với UI mới** (chưa cập nhật theo yêu cầu — làm
+> phần chính trước). Các key/luồng đã đổi:
+>
+> - Helper `searchTopic()` gõ `home_search_field` → ô này **không còn**. Thay
+>   bằng: bấm `field_card_17` → chờ `subfield_1712` → bấm, HOẶC dùng ô tìm kiếm
+>   `taxonomy_search_field` (gõ → chờ chip `topic_suggestion_<id>` → bấm). Mốc
+>   chờ đổi từ `'Tổng bài báo'` → tên tab `'Tổng quan'` hiện ra (`TabBar` 3 tab:
+>   Tổng quan/Xu hướng/Bài báo).
+> - TC2/TC3: danh sách bài báo giờ nằm trong tab **Bài báo** ngay tại Home (key
+>   `publications_list` vẫn còn, nhưng ở trong `home_screen.dart` — không còn
+>   `home_view_all_button` hay `PublicationsScreen` riêng để bấm/push nữa, phải
+>   chuyển tab bằng `find.text('Bài báo')` thay vì tap nút rồi chờ push màn mới).
+> - Thanh chip bộ lọc có key mới: `home_open_filter_button`,
+>   `home_clear_filter_button` — cả hai đều quay về lưới chọn lĩnh vực.
+> - TC4/TC5 (Journals) và TC6/TC7/TC12 (Keywords): 2 tab này giờ có ô tìm kiếm
+>   riêng (`taxonomy_search_field`), không còn bám theo chủ đề chọn ở Home. Test
+>   phải tự chọn chủ đề ngay trong tab.
+> - TC9 (export PDF): thẻ export ở Profile giờ có ô chọn chủ đề riêng — phải
+>   chọn chủ đề trước khi nút `export_pdf_button` bật.
 
 Bộ test nằm ở thư mục `patrol_tests/` (cấu hình trong `pubspec.yaml` mục `patrol:`).
 

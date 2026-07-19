@@ -18,6 +18,9 @@ class RankedBarList<T> extends StatelessWidget {
   final String title;
   final String subtitle;
   final String emptyMessage;
+  // Journals/Keywords tab cần biểu đồ (nội dung chính của màn). Home chỉ cần
+  // danh sách xếp hạng gọn cho tab Tổng quan, không cần lặp lại chart.
+  final bool showChart;
 
   const RankedBarList({
     super.key,
@@ -29,6 +32,7 @@ class RankedBarList<T> extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.emptyMessage = 'Không có dữ liệu.',
+    this.showChart = true,
   });
 
   @override
@@ -38,6 +42,7 @@ class RankedBarList<T> extends StatelessWidget {
     }
 
     final maxCount = countOf(items.first);
+    final axis = TextUtils.niceAxis(maxCount);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,104 +70,128 @@ class RankedBarList<T> extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 20, 20, 8),
-            child: SizedBox(
-              height: (items.length * 48).toDouble().clamp(200, 400),
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.center,
-                  maxY: maxCount * 1.2,
-                  barTouchData: BarTouchData(
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (_) => AppColors.primary,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          '${TextUtils.formatCount(countOf(items[groupIndex]))} bài',
-                          const TextStyle(color: Colors.white, fontSize: 12),
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 120,
-                        getTitlesWidget: (value, meta) {
-                          final idx = value.toInt();
-                          if (idx < 0 || idx >= items.length) {
-                            return const SizedBox.shrink();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: Text(
-                              TextUtils.truncate(nameOf(items[idx]), 16),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppColors.textSecondary,
-                              ),
-                              textAlign: TextAlign.right,
-                            ),
+        if (showChart) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 20, 20, 8),
+              child: SizedBox(
+                height: (items.length * 48).toDouble().clamp(200, 400),
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.center,
+                    maxY: axis.maxY,
+                    // Xoay CẢ khối chart (kể cả trục) 90° thuận chiều kim
+                    // đồng hồ — đây là cách CHÍNH THỐNG của fl_chart để có
+                    // horizontal bar chart (đối chiếu BarChartSample7 "Horizontal
+                    // Bar Chart" trong repo mẫu chính thức), khác hẳn cách vẽ
+                    // BarChart bình thường (luôn là cột dọc). Sau khi xoay: cạnh
+                    // TRÁI trước khi xoay thành cạnh TRÊN, cạnh DƯỚI trước khi
+                    // xoay thành cạnh TRÁI — vì vậy tên (muốn đọc được ở bên
+                    // trái) phải khai ở bottomTitles, giá trị (muốn ở trên) khai
+                    // ở leftTitles — ngược với một BarChart dọc thông thường.
+                    rotationQuarterTurns: 1,
+                    barTouchData: BarTouchData(
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipColor: (_) => AppColors.primary,
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          return BarTooltipItem(
+                            '${TextUtils.formatCount(countOf(items[groupIndex]))} bài',
+                            const TextStyle(color: Colors.white, fontSize: 12),
                           );
                         },
                       ),
                     ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) => Text(
-                          TextUtils.formatCount(value.toInt()),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textSecondary,
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 120,
+                          getTitlesWidget: (value, meta) {
+                            final idx = value.toInt();
+                            if (idx < 0 || idx >= items.length) {
+                              return const SizedBox.shrink();
+                            }
+                            // SideTitleWidget tự bù lại góc xoay của chart để
+                            // chữ đứng thẳng, đọc được bình thường — thiếu
+                            // nó thì text sẽ nằm nghiêng 90° theo chart.
+                            return SideTitleWidget(
+                              meta: meta,
+                              child: Text(
+                                TextUtils.truncate(nameOf(items[idx]), 16),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 32,
+                          interval: axis.interval,
+                          getTitlesWidget: (value, meta) => SideTitleWidget(
+                            meta: meta,
+                            child: Text(
+                              TextUtils.formatCount(value.toInt()),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                    gridData: FlGridData(
+                      drawHorizontalLine: false,
+                      getDrawingVerticalLine: (_) => FlLine(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                        strokeWidth: 1,
+                      ),
                     ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    drawHorizontalLine: false,
-                    getDrawingVerticalLine: (_) => FlLine(
-                      color: Colors.grey.withValues(alpha: 0.2),
-                      strokeWidth: 1,
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: items.asMap().entries.map((entry) {
-                    final color =
-                        AppColors.chartColors[entry.key % AppColors.chartColors.length];
-                    return BarChartGroupData(
-                      x: entry.key,
-                      barRods: [
-                        BarChartRodData(
-                          toY: countOf(entry.value).toDouble(),
-                          color: color,
-                          width: 16,
-                          borderRadius: const BorderRadius.horizontal(
-                            right: Radius.circular(4),
+                    borderData: FlBorderData(show: false),
+                    barGroups: items.asMap().entries.map((entry) {
+                      final color =
+                          AppColors.chartColors[entry.key %
+                              AppColors.chartColors.length];
+                      return BarChartGroupData(
+                        x: entry.key,
+                        barRods: [
+                          BarChartRodData(
+                            toY: countOf(entry.value).toDouble(),
+                            color: color,
+                            width: 16,
+                            // Bo góc cạnh TRÊN trước khi xoay -> sau khi xoay
+                            // 90° CW trở thành đầu mút bên PHẢI của thanh
+                            // ngang (đúng chỗ cần bo tròn).
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(4),
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                  duration: const Duration(milliseconds: 400),
                 ),
-                duration: const Duration(milliseconds: 400),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
         ...items.asMap().entries.map(
-              (entry) => _buildListItem(entry.key + 1, entry.value, maxCount),
-            ),
+          (entry) => _buildListItem(entry.key + 1, entry.value, maxCount),
+        ),
       ],
     );
   }
@@ -170,7 +199,8 @@ class RankedBarList<T> extends StatelessWidget {
   Widget _buildListItem(int rank, T item, int maxCount) {
     final count = countOf(item);
     final fraction = (count / maxCount).clamp(0.0, 1.0);
-    final color = AppColors.chartColors[(rank - 1) % AppColors.chartColors.length];
+    final color =
+        AppColors.chartColors[(rank - 1) % AppColors.chartColors.length];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -192,8 +222,9 @@ class RankedBarList<T> extends StatelessWidget {
                     children: [
                       Text(
                         nameOf(item),
-                        style:
-                            AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -219,8 +250,11 @@ class RankedBarList<T> extends StatelessWidget {
                   ),
                 ),
                 if (onTap != null)
-                  const Icon(Icons.chevron_right_rounded,
-                      color: AppColors.textHint, size: 20),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textHint,
+                    size: 20,
+                  ),
               ],
             ),
           ),

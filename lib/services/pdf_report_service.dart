@@ -49,10 +49,7 @@ class PdfReportService {
             data: [
               ['Tổng bài báo', stats.totalPublications.toString()],
               ['TB trích dẫn (ước lượng)', stats.formattedAvgCitation],
-              [
-                'Năm sôi động nhất',
-                stats.mostActiveYear?.toString() ?? 'N/A',
-              ],
+              ['Năm sôi động nhất', stats.mostActiveYear?.toString() ?? 'N/A'],
             ],
           ),
           pw.SizedBox(height: 20),
@@ -94,11 +91,9 @@ class PdfReportService {
       data: items
           .asMap()
           .entries
-          .map((e) => [
-                (e.key + 1).toString(),
-                e.value.$1,
-                e.value.$2.toString(),
-              ])
+          .map(
+            (e) => [(e.key + 1).toString(), e.value.$1, e.value.$2.toString()],
+          )
           .toList(),
     );
   }

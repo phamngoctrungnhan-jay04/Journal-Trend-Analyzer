@@ -23,10 +23,16 @@ void main() {
     await pumpAuthenticatedApp($);
 
     await $(const Key('nav_profile')).tap();
-    // Nút đăng xuất nằm cuối màn Profile (dưới các card export/thông báo/
-    // debug) nên phải cuộn tới. ProfileScreen chỉ có 1 Scrollable (ListView)
-    // nên scrollTo tự nhận đúng.
-    await scrollToKey($, const Key('logout_button'));
+    // Nút đăng xuất nằm cuối màn Profile (dưới card bookmark/export/thông
+    // báo/cài đặt hiển thị/debug) nên phải cuộn tới. Chỉ đích danh view =
+    // profile_list — mặc định scrollTo lấy Scrollable ĐẦU TIÊN trong toàn
+    // app, có thể trúng nhầm tab khác (IndexedStack của MainShell vẫn giữ
+    // các tab khác tồn tại ngầm).
+    await scrollToKey(
+      $,
+      const Key('logout_button'),
+      view: find.byKey(const Key('profile_list')),
+    );
     await $(const Key('logout_button')).tap();
 
     await $('Đăng nhập với Google').waitUntilVisible();
